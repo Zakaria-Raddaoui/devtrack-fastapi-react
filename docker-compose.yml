@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  fastapi:
+    image: tiangolo/uvicorn-gunicorn-fastapi:python3.9
+    restart: always
+    ports:
+      - '8000:80'
+    volumes:
+      - ./app:/app
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
