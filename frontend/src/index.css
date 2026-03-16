@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Light theme */
+  --bg: #f5f4f0;
+  --card-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #111111;
+  --muted: #6b7280;
+  --placeholder: #9ca3af;
+  --input-bg: #f9f9f7;
+  --shadow: rgba(0, 0, 0, 0.08);
+  --grid-line: rgba(0, 0, 0, 0.06);
+  --hover-bg: rgba(249, 115, 22, 0.06);
+  --tag-bg: rgba(249, 115, 22, 0.1);
+  --tag-text: #c2410c;
+  --success-bg: rgba(34, 197, 94, 0.1);
+  --success-text: #15803d;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --danger-text: #dc2626;
+}
+
+[data-theme="dark"] {
+  --bg: #0f0f0f;
+  --card-bg: #1a1a1a;
+  --sidebar-bg: #141414;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f0ede8;
+  --muted: #888580;
+  --placeholder: #555250;
+  --input-bg: #222222;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --hover-bg: rgba(249, 115, 22, 0.08);
+  --tag-bg: rgba(249, 115, 22, 0.15);
+  --tag-text: #fb923c;
+  --success-bg: rgba(34, 197, 94, 0.12);
+  --success-text: #4ade80;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --danger-text: #f87171;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }

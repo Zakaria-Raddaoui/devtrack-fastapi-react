@@ -1,52 +1,90 @@
-from fastapi import APIRouter, HTTPException
-from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
 
-router = APIRouter()
+import models
+import schemas
+import security
+from database import get_db
 
-# Fake in-memory data store
-resources_db = []
+router = APIRouter(prefix="/resources", tags=["resources"])
 
-# Resource model
-class Resource:
-    def __init__(self, id: int, title: str, description: str):
-        self.id = id
-        self.title = title
-        self.description = description
 
-# Create a new resource
-@router.post('/resources/', response_model=Resource)
-def create_resource(resource: Resource):
-    resources_db.append(resource)
+@router.post("/", response_model=schemas.ResourceResponse, status_code=status.HTTP_201_CREATED)
+def create_resource(
+    resource: schemas.ResourceCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user),
+):
+    db_resource = models.Resource(**resource.model_dump(), owner_id=current_user.id)
+    db.add(db_resource)
+    db.commit()
+    db.refresh(db_resource)
+    return db_resource
+
+
+@router.get("/", response_model=List[schemas.ResourceResponse])
+def read_resources(
+    skip: int = 0,
+    limit: int = 20,
+    topic_id: int = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user),
+):
+    query = db.query(models.Resource).filter(models.Resource.owner_id == current_user.id)
+    if topic_id:
+        query = query.filter(models.Resource.topic_id == topic_id)
+    return query.offset(skip).limit(limit).all()
+
+
+@router.get("/{resource_id}", response_model=schemas.ResourceResponse)
+def read_resource(
+    resource_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user),
+):
+    resource = db.query(models.Resource).filter(
+        models.Resource.id == resource_id,
+        models.Resource.owner_id == current_user.id
+    ).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
     return resource
 
-# Read all resources
-@router.get('/resources/', response_model=List[Resource])
-def read_resources():
-    return resources_db
 
-# Read a single resource by ID
-@router.get('/resources/{resource_id}', response_model=Resource)
-def read_resource(resource_id: int):
-    resource = next((r for r in resources_db if r.id == resource_id), None)
-    if resource is None:
-        raise HTTPException(status_code=404, detail='Resource not found')
+@router.put("/{resource_id}", response_model=schemas.ResourceResponse)
+def update_resource(
+    resource_id: int,
+    resource_data: schemas.ResourceUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user),
+):
+    resource = db.query(models.Resource).filter(
+        models.Resource.id == resource_id,
+        models.Resource.owner_id == current_user.id
+    ).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    for field, value in resource_data.model_dump(exclude_unset=True).items():
+        setattr(resource, field, value)
+
+    db.commit()
+    db.refresh(resource)
     return resource
 
-# Update a resource by ID
-@router.put('/resources/{resource_id}', response_model=Resource)
-def update_resource(resource_id: int, updated_resource: Resource):
-    resource_index = next((index for index, r in enumerate(resources_db) if r.id == resource_id), None)
-    if resource_index is None:
-        raise HTTPException(status_code=404, detail='Resource not found')
-    resources_db[resource_index] = updated_resource
-    return updated_resource
 
-# Delete a resource by ID
-@router.delete('/resources/{resource_id}', response_model=dict)
-def delete_resource(resource_id: int):
-    resource_index = next((index for index, r in enumerate(resources_db) if r.id == resource_id), None)
-    if resource_index is None:
-        raise HTTPException(status_code=404, detail='Resource not found')
-    del resources_db[resource_index]
-    return {'detail': 'Resource deleted successfully'}
-
+@router.delete("/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_resource(
+    resource_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user),
+):
+    resource = db.query(models.Resource).filter(
+        models.Resource.id == resource_id,
+        models.Resource.owner_id == current_user.id
+    ).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    db.delete(resource)
+    db.commit()
