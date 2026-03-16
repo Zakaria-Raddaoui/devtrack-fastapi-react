@@ -4,12 +4,6 @@ A full-stack web application for developers to track their learning journey. Log
 
 ---
 
-## Screenshots
-
-> Add screenshots of your app here after deployment.
-
----
-
 ## Features
 
 - **Authentication** — Register, login, and JWT-protected routes
