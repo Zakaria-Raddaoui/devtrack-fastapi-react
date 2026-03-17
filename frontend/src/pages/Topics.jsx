@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from '../api/axios';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -8,20 +9,21 @@ const DIFFICULTY_COLORS = {
     advanced: { bg: 'rgba(239,68,68,0.12)', text: '#dc2626', label: 'Advanced' },
 };
 
-const STATUS_COLORS = {
-    learning: { bg: 'rgba(59,130,246,0.12)', text: '#2563eb', label: 'Learning' },
-    mastered: { bg: 'rgba(34,197,94,0.12)', text: '#16a34a', label: 'Mastered' },
+const STATUS_META = {
+    to_learn: { label: 'To Learn', color: '#6b7280', accent: 'rgba(107,114,128,0.08)' },
+    learning: { label: 'Learning', color: '#3b82f6', accent: 'rgba(59,130,246,0.08)' },
+    mastered: { label: 'Mastered', color: '#22c55e', accent: 'rgba(34,197,94,0.08)' },
 };
 
-function Badge({ type, value }) {
-    const map = type === 'difficulty' ? DIFFICULTY_COLORS : STATUS_COLORS;
+const COLUMNS = ['to_learn', 'learning', 'mastered'];
+
+function Badge({ value, map }) {
     const c = map[value] || {};
     return (
         <span style={{
             background: c.bg, color: c.text,
             fontSize: 11, fontWeight: 600, padding: '3px 10px',
-            borderRadius: 99, letterSpacing: '0.3px',
-            textTransform: 'uppercase',
+            borderRadius: 99, letterSpacing: '0.3px', textTransform: 'uppercase',
         }}>
             {c.label}
         </span>
@@ -34,7 +36,8 @@ function TopicModal({ topic, onClose, onSaved }) {
         title: topic?.title || '',
         description: topic?.description || '',
         difficulty: topic?.difficulty || 'beginner',
-        status: topic?.status || 'learning',
+        status: topic?.status || 'to_learn',
+        goal_hours: topic?.goal_hours || '',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -46,15 +49,17 @@ function TopicModal({ topic, onClose, onSaved }) {
         setLoading(true);
         setError('');
         try {
-            if (editing) {
-                await api.put(`/topics/${topic.id}`, form);
-            } else {
-                await api.post('/topics/', form);
-            }
+            const payload = {
+                ...form,
+                goal_hours: form.goal_hours ? parseFloat(form.goal_hours) : null,
+            };
+            if (editing) await api.put(`/topics/${topic.id}`, payload);
+            else await api.post('/topics/', payload);
             onSaved();
             onClose();
         } catch (err) {
-            setError(err.response?.data?.detail || 'Something went wrong');
+            const detail = err.response?.data?.detail;
+            setError(typeof detail === 'string' ? detail : 'Validation error — check your inputs');
         } finally {
             setLoading(false);
         }
@@ -90,10 +95,16 @@ function TopicModal({ topic, onClose, onSaved }) {
                         <div className="field">
                             <label>Status</label>
                             <select name="status" value={form.status} onChange={handle}>
+                                <option value="to_learn">To Learn</option>
                                 <option value="learning">Learning</option>
                                 <option value="mastered">Mastered</option>
                             </select>
                         </div>
+                    </div>
+                    <div className="field">
+                        <label>Goal hours <span style={{ color: 'var(--placeholder)', fontWeight: 400 }}>(optional)</span></label>
+                        <input type="number" name="goal_hours" value={form.goal_hours} onChange={handle}
+                            placeholder="e.g. 20" min={0.5} step={0.5} />
                     </div>
                     {error && <p className="form-error">{error}</p>}
                     <button type="submit" className="submit-btn" disabled={loading}>
@@ -105,157 +116,222 @@ function TopicModal({ topic, onClose, onSaved }) {
     );
 }
 
-function TopicCard({ topic, onEdit, onDelete }) {
-    const [deleting, setDeleting] = useState(false);
+function ProgressBar({ topic, loggedMinutes }) {
+    if (!topic.goal_hours) return null;
+    const goalMinutes = topic.goal_hours * 60;
+    const pct = Math.min(100, Math.round((loggedMinutes / goalMinutes) * 100));
+    const color = pct >= 100 ? '#22c55e' : pct >= 60 ? '#f97316' : '#3b82f6';
+    return (
+        <div className="progress-wrap">
+            <div className="progress-bar-bg">
+                <div className="progress-bar-fill" style={{ width: `${pct}%`, background: color }} />
+            </div>
+            <span className="progress-label" style={{ color }}>
+                {pct}% · {(loggedMinutes / 60).toFixed(1)}h / {topic.goal_hours}h
+            </span>
+        </div>
+    );
+}
+
+function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes }) {
     const [confirm, setConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     const handleDelete = async () => {
         setDeleting(true);
         try {
             await api.delete(`/topics/${topic.id}`);
             onDelete();
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setDeleting(false);
-            setConfirm(false);
-        }
+        } catch (e) { console.error(e); }
+        finally { setDeleting(false); setConfirm(false); }
     };
 
     return (
-        <div className="topic-card">
-            <div className="topic-top">
-                <div className="topic-badges">
-                    <Badge type="difficulty" value={topic.difficulty} />
-                    <Badge type="status" value={topic.status} />
+        <Draggable draggableId={String(topic.id)} index={index}>
+            {(provided, snapshot) => (
+                <div
+                    className={`topic-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                >
+                    <div className="topic-top">
+                        <Badge value={topic.difficulty} map={DIFFICULTY_COLORS} />
+                        <div className="topic-actions">
+                            <button className="icon-btn edit-btn" onClick={() => onEdit(topic)} title="Edit">✎</button>
+                            <button className="icon-btn del-btn" onClick={() => setConfirm(true)} disabled={deleting} title="Delete">
+                                {deleting ? '...' : '✕'}
+                            </button>
+                        </div>
+                    </div>
+                    <h3 className="topic-title">{topic.title}</h3>
+                    {topic.description && <p className="topic-desc">{topic.description}</p>}
+                    <ProgressBar topic={topic} loggedMinutes={loggedMinutes} />
+                    <p className="topic-date">
+                        Added {new Date(topic.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    {confirm && (
+                        <ConfirmDialog
+                            title="Delete topic"
+                            message={`Delete "${topic.title}"? All associated logs will also be removed.`}
+                            onConfirm={handleDelete}
+                            onCancel={() => setConfirm(false)}
+                        />
+                    )}
                 </div>
-                <div className="topic-actions">
-                    <button className="icon-btn edit-btn" onClick={() => onEdit(topic)} title="Edit">✎</button>
-                    <button className="icon-btn del-btn" onClick={() => setConfirm(true)} disabled={deleting} title="Delete">
-                        {deleting ? '...' : '✕'}
-                    </button>
-                </div>
-            </div>
-            <h3 className="topic-title">{topic.title}</h3>
-            {topic.description && <p className="topic-desc">{topic.description}</p>}
-            <p className="topic-date">
-                Added {new Date(topic.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </p>
-            {confirm && (
-                <ConfirmDialog
-                    title="Delete topic"
-                    message={`Are you sure you want to delete "${topic.title}"? This will also remove all associated logs.`}
-                    onConfirm={handleDelete}
-                    onCancel={() => setConfirm(false)}
-                />
             )}
+        </Draggable>
+    );
+}
+
+function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes }) {
+    const meta = STATUS_META[status];
+    return (
+        <div className="kanban-col">
+            <div className="col-header">
+                <div className="col-dot" style={{ background: meta.color }} />
+                <span className="col-label">{meta.label}</span>
+                <span className="col-count">{topics.length}</span>
+            </div>
+            <Droppable droppableId={status}>
+                {(provided, snapshot) => (
+                    <div
+                        className={`col-body ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        style={{ background: snapshot.isDraggingOver ? meta.accent : undefined }}
+                    >
+                        {topics.map((t, i) => (
+                            <TopicCard
+                                key={t.id}
+                                topic={t}
+                                index={i}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                                loggedMinutes={topicMinutes[t.id] || 0}
+                            />
+                        ))}
+                        {provided.placeholder}
+                        {topics.length === 0 && !snapshot.isDraggingOver && (
+                            <div className="col-empty">Drop topics here</div>
+                        )}
+                    </div>
+                )}
+            </Droppable>
         </div>
     );
 }
 
 export default function Topics() {
     const [topics, setTopics] = useState([]);
+    const [topicMinutes, setTopicMinutes] = useState({});
     const [loading, setLoading] = useState(true);
-    const [modal, setModal] = useState(null); // null | {} (new) | topic (edit)
-    const [filter, setFilter] = useState('all'); // all | learning | mastered
+    const [modal, setModal] = useState(null);
     const [search, setSearch] = useState('');
 
-    const fetchTopics = async () => {
+    const fetchData = async () => {
         try {
-            const res = await api.get('/topics/');
-            setTopics(res.data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
+            const [topicsRes, logsRes] = await Promise.all([
+                api.get('/topics/'),
+                api.get('/logs/'),
+            ]);
+            setTopics(topicsRes.data);
+            const mins = {};
+            logsRes.data.forEach(l => {
+                mins[l.topic_id] = (mins[l.topic_id] || 0) + l.time_spent;
+            });
+            setTopicMinutes(mins);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
+    const onDragEnd = async (result) => {
+        const { destination, source, draggableId } = result;
+        if (!destination) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+        const newStatus = destination.droppableId;
+        const topicId = parseInt(draggableId);
+
+        setTopics(prev => {
+            const dragged = { ...prev.find(t => t.id === topicId), status: newStatus };
+            const rest = prev.filter(t => t.id !== topicId);
+            const sameCol = rest.filter(t => t.status === newStatus);
+            const others = rest.filter(t => t.status !== newStatus);
+            sameCol.splice(destination.index, 0, dragged);
+            return [...others, ...sameCol];
+        });
+
+        if (newStatus !== source.droppableId) {
+            try {
+                await api.put(`/topics/${topicId}`, { status: newStatus });
+            } catch (e) {
+                console.error(e);
+                fetchData();
+            }
         }
     };
 
-    useEffect(() => { fetchTopics(); }, []);
+    const filtered = topics.filter(t =>
+        t.title.toLowerCase().includes(search.toLowerCase())
+    );
 
-    const filtered = topics
-        .filter(t => filter === 'all' || t.status === filter)
-        .filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
+    const byStatus = status => filtered.filter(t => t.status === status);
 
     if (loading) return (
-        <div className="page-loading">
-            <div className="loading-ring" />
-        </div>
+        <div className="page-loading"><div className="loading-ring" /></div>
     );
 
     return (
         <div className="topics-root">
-            {/* Header */}
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Topics</h1>
                     <p className="page-sub">{topics.length} topic{topics.length !== 1 ? 's' : ''} tracked</p>
                 </div>
-                <button className="primary-btn" onClick={() => setModal({})}>
-                    <span>+</span> New topic
-                </button>
+                <div className="header-right">
+                    <input
+                        className="search-input"
+                        placeholder="Search topics..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                    <button className="primary-btn" onClick={() => setModal({})}>
+                        <span>+</span> New topic
+                    </button>
+                </div>
             </div>
 
-            {/* Filters */}
-            <div className="filter-bar">
-                <div className="filter-tabs">
-                    {['all', 'learning', 'mastered'].map(f => (
-                        <button
-                            key={f}
-                            className={`filter-tab ${filter === f ? 'active' : ''}`}
-                            onClick={() => setFilter(f)}
-                        >
-                            {f.charAt(0).toUpperCase() + f.slice(1)}
-                            <span className="filter-count">
-                                {f === 'all' ? topics.length : topics.filter(t => t.status === f).length}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-                <input
-                    className="search-input"
-                    placeholder="Search topics..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                />
-            </div>
-
-            {/* Grid */}
-            {filtered.length === 0 ? (
-                <div className="empty-state">
-                    <div className="empty-icon">◈</div>
-                    <p className="empty-title">{search ? 'No topics found' : 'No topics yet'}</p>
-                    <p className="empty-sub">{search ? 'Try a different search' : 'Create your first topic to start tracking'}</p>
-                    {!search && (
-                        <button className="primary-btn" onClick={() => setModal({})}>+ New topic</button>
-                    )}
-                </div>
-            ) : (
-                <div className="topics-grid">
-                    {filtered.map(t => (
-                        <TopicCard
-                            key={t.id}
-                            topic={t}
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div className="kanban-board">
+                    {COLUMNS.map(status => (
+                        <KanbanColumn
+                            key={status}
+                            status={status}
+                            topics={byStatus(status)}
                             onEdit={setModal}
-                            onDelete={fetchTopics}
+                            onDelete={fetchData}
+                            topicMinutes={topicMinutes}
                         />
                     ))}
                 </div>
-            )}
+            </DragDropContext>
 
-            {/* Modal */}
             {modal !== null && (
                 <TopicModal
                     topic={modal}
                     onClose={() => setModal(null)}
-                    onSaved={fetchTopics}
+                    onSaved={fetchData}
                 />
             )}
 
             <style>{`
         .topics-root {
           padding: 40px 44px;
-          max-width: 1100px;
+          width: 100%;
+          box-sizing: border-box;
           animation: fadeIn 0.4s ease forwards;
         }
 
@@ -282,7 +358,7 @@ export default function Topics() {
         .page-header {
           display: flex; align-items: flex-start;
           justify-content: space-between;
-          margin-bottom: 32px; gap: 16px; flex-wrap: wrap;
+          margin-bottom: 28px; gap: 16px; flex-wrap: wrap;
         }
 
         .page-title {
@@ -293,6 +369,27 @@ export default function Topics() {
         }
 
         .page-sub { font-size: 14px; color: var(--muted); }
+
+        .header-right {
+          display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+
+        .search-input {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px; padding: 10px 16px;
+          font-size: 14px; color: var(--text);
+          font-family: 'DM Sans', sans-serif;
+          outline: none; width: 220px;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+          border-color: #f97316;
+          box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+        }
+
+        .search-input::placeholder { color: var(--placeholder); }
 
         .primary-btn {
           display: flex; align-items: center; gap: 8px;
@@ -308,108 +405,92 @@ export default function Topics() {
         .primary-btn span { font-size: 18px; line-height: 1; }
         .primary-btn:hover { background: #ea6c0a; transform: translateY(-1px); }
 
-        .filter-bar {
-          display: flex; align-items: center;
-          justify-content: space-between;
-          gap: 16px; margin-bottom: 28px; flex-wrap: wrap;
-        }
-
-        .filter-tabs {
-          display: flex; gap: 4px;
-          background: var(--card-bg);
-          border: 1px solid var(--border);
-          border-radius: 10px; padding: 4px;
-        }
-
-        .filter-tab {
-          display: flex; align-items: center; gap: 6px;
-          background: none; border: none;
-          border-radius: 7px; padding: 7px 14px;
-          font-size: 13px; font-weight: 500;
-          color: var(--muted); cursor: pointer;
-          transition: all 0.2s;
-          font-family: 'DM Sans', sans-serif;
-        }
-
-        .filter-tab:hover { color: var(--text); }
-
-        .filter-tab.active {
-          background: var(--bg);
-          color: var(--text);
-          box-shadow: 0 1px 4px var(--shadow);
-        }
-
-        .filter-count {
-          background: var(--border);
-          color: var(--muted);
-          font-size: 11px; font-weight: 600;
-          padding: 1px 7px; border-radius: 99px;
-          min-width: 20px; text-align: center;
-        }
-
-        .filter-tab.active .filter-count {
-          background: rgba(249,115,22,0.12);
-          color: #f97316;
-        }
-
-        .search-input {
-          background: var(--card-bg);
-          border: 1px solid var(--border);
-          border-radius: 10px;
-          padding: 10px 16px;
-          font-size: 14px;
-          color: var(--text);
-          font-family: 'DM Sans', sans-serif;
-          outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
-          width: 220px;
-        }
-
-        .search-input:focus {
-          border-color: #f97316;
-          box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
-        }
-
-        .search-input::placeholder { color: var(--placeholder); }
-
-        .topics-grid {
+        .kanban-board {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          align-items: start;
+          padding-bottom: 40px;
         }
 
-        .topic-card {
+        .kanban-col {
           background: var(--card-bg);
           border: 1px solid var(--border);
           border-radius: 16px;
-          padding: 22px;
-          transition: transform 0.2s, box-shadow 0.2s;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
         }
 
-        .topic-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 32px var(--shadow);
+        .col-header {
+          display: flex; align-items: center; gap: 8px;
+          padding: 16px 18px;
+          border-bottom: 1px solid var(--border);
+          border-radius: 16px 16px 0 0;
+        }
+
+        .col-dot {
+          width: 8px; height: 8px;
+          border-radius: 50%; flex-shrink: 0;
+        }
+
+        .col-label {
+          font-family: 'Syne', sans-serif;
+          font-size: 14px; font-weight: 700;
+          color: var(--text); flex: 1;
+        }
+
+        .col-count {
+          font-size: 12px; font-weight: 600;
+          background: var(--bg); color: var(--muted);
+          padding: 2px 8px; border-radius: 99px;
+          border: 1px solid var(--border);
+        }
+
+        .col-body {
+          padding: 12px;
+          display: flex; flex-direction: column; gap: 10px;
+          min-height: 80px;
+          border-radius: 0 0 16px 16px;
+          transition: background 0.15s;
+        }
+
+        .col-empty {
+          text-align: center; padding: 32px 16px;
+          color: var(--placeholder); font-size: 13px;
+          border: 2px dashed var(--border);
+          border-radius: 10px; margin-top: 4px;
+        }
+
+        .topic-card {
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 12px; padding: 16px;
+          display: flex; flex-direction: column; gap: 8px;
+          cursor: grab; user-select: none;
+        }
+
+        .topic-card:hover { box-shadow: 0 4px 16px var(--shadow); }
+
+        .topic-card.dragging {
+          box-shadow: 0 12px 40px var(--shadow);
+          cursor: grabbing;
+          opacity: 0.95;
         }
 
         .topic-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
+          display: flex; align-items: center;
+          justify-content: space-between; gap: 8px;
         }
 
-        .topic-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+        .topic-actions {
+          display: flex; gap: 4px;
+          opacity: 0.4; transition: opacity 0.2s;
+        }
 
-        .topic-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
         .topic-card:hover .topic-actions { opacity: 1; }
 
         .icon-btn {
           background: none; border: none;
-          border-radius: 6px; padding: 4px 8px;
-          font-size: 14px; cursor: pointer;
+          border-radius: 6px; padding: 3px 7px;
+          font-size: 13px; cursor: pointer;
           transition: all 0.2s;
           font-family: 'DM Sans', sans-serif;
         }
@@ -421,13 +502,12 @@ export default function Topics() {
 
         .topic-title {
           font-family: 'Syne', sans-serif;
-          font-size: 17px; font-weight: 700;
-          color: var(--text); letter-spacing: -0.3px;
-          margin: 0;
+          font-size: 15px; font-weight: 700;
+          color: var(--text); margin: 0; letter-spacing: -0.3px;
         }
 
         .topic-desc {
-          font-size: 13px; color: var(--muted);
+          font-size: 12px; color: var(--muted);
           line-height: 1.5; margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -435,36 +515,28 @@ export default function Topics() {
           overflow: hidden;
         }
 
-        .topic-date { font-size: 11px; color: var(--placeholder); margin-top: auto; }
+        .topic-date { font-size: 11px; color: var(--placeholder); margin-top: 2px; }
 
-        /* Empty state */
-        .empty-state {
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          padding: 80px 20px; gap: 12px; text-align: center;
+        .progress-wrap { display: flex; flex-direction: column; gap: 4px; }
+
+        .progress-bar-bg {
+          height: 4px; border-radius: 99px;
+          background: var(--border); overflow: hidden;
         }
 
-        .empty-icon {
-          font-size: 48px; color: var(--border);
-          margin-bottom: 8px;
+        .progress-bar-fill {
+          height: 100%; border-radius: 99px;
+          transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .empty-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 18px; font-weight: 700;
-          color: var(--text);
-        }
+        .progress-label { font-size: 11px; font-weight: 600; }
 
-        .empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
-
-        /* Modal */
         .modal-overlay {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.5);
           backdrop-filter: blur(4px);
           display: flex; align-items: center;
           justify-content: center; z-index: 1000;
-          animation: fadeIn 0.2s ease;
         }
 
         .modal-card {
@@ -492,9 +564,8 @@ export default function Topics() {
         }
 
         .modal-close {
-          background: none; border: none;
-          color: var(--muted); font-size: 16px;
-          cursor: pointer; padding: 4px 8px;
+          background: none; border: none; color: var(--muted);
+          font-size: 16px; cursor: pointer; padding: 4px 8px;
           border-radius: 6px; transition: all 0.2s;
         }
 
@@ -506,9 +577,7 @@ export default function Topics() {
 
         .field { display: flex; flex-direction: column; gap: 7px; }
 
-        .field label {
-          font-size: 13px; font-weight: 500; color: var(--muted);
-        }
+        .field label { font-size: 13px; font-weight: 500; color: var(--muted); }
 
         .field input, .field select, .field textarea {
           background: var(--input-bg);
@@ -544,10 +613,7 @@ export default function Topics() {
           box-shadow: 0 4px 16px rgba(249,115,22,0.3);
         }
 
-        .submit-btn:hover:not(:disabled) {
-          background: #ea6c0a; transform: translateY(-1px);
-        }
-
+        .submit-btn:hover:not(:disabled) { background: #ea6c0a; transform: translateY(-1px); }
         .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
         .spinner {

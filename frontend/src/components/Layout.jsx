@@ -1,13 +1,151 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 const NAV = [
   { to: '/dashboard', icon: '⊡', label: 'Dashboard' },
-  { to: '/topics',    icon: '◈', label: 'Topics'    },
-  { to: '/logs',      icon: '◷', label: 'Logs'      },
+  { to: '/topics', icon: '◈', label: 'Topics' },
+  { to: '/logs', icon: '◷', label: 'Logs' },
   { to: '/resources', icon: '⊞', label: 'Resources' },
 ];
+
+const TYPE_ICONS = {
+  topic: '◈',
+  log: '◷',
+  resource: '⊞',
+};
+
+const TYPE_COLORS = {
+  topic: '#f97316',
+  log: '#3b82f6',
+  resource: '#22c55e',
+};
+
+function GlobalSearch({ collapsed }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const inputRef = useRef(null);
+  const containerRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  const search = useCallback(async (q) => {
+    if (!q.trim()) { setResults([]); setOpen(false); return; }
+    setLoading(true);
+    try {
+      const res = await api.get(`/search/?q=${encodeURIComponent(q)}`);
+      setResults(res.data.results);
+      setOpen(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => search(val), 300);
+  };
+
+  const handleSelect = (result) => {
+    const routes = { topic: '/topics', log: '/logs', resource: '/resources' };
+    navigate(routes[result.type] || '/dashboard');
+    setQuery('');
+    setResults([]);
+    setOpen(false);
+  };
+
+  const handleKey = (e) => {
+    if (e.key === 'Escape') { setOpen(false); setQuery(''); }
+  };
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Keyboard shortcut: Ctrl+K
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  if (collapsed) {
+    return (
+      <button
+        className="search-icon-btn"
+        onClick={() => inputRef.current?.focus()}
+        title="Search (Ctrl+K)"
+      >
+        ⌕
+      </button>
+    );
+  }
+
+  return (
+    <div className="search-wrap" ref={containerRef}>
+      <div className="search-input-wrap">
+        <span className="search-icon">⌕</span>
+        <input
+          ref={inputRef}
+          className="search-input"
+          placeholder="Search... (Ctrl+K)"
+          value={query}
+          onChange={handleChange}
+          onKeyDown={handleKey}
+          onFocus={() => query && setOpen(true)}
+        />
+        {loading && <span className="search-spinner" />}
+        {query && !loading && (
+          <button className="search-clear" onClick={() => { setQuery(''); setResults([]); setOpen(false); }}>✕</button>
+        )}
+      </div>
+
+      {open && (
+        <div className="search-dropdown">
+          {results.length === 0 ? (
+            <div className="search-empty">No results for "{query}"</div>
+          ) : (
+            results.map((r, i) => (
+              <button
+                key={i}
+                className="search-result"
+                onClick={() => handleSelect(r)}
+              >
+                <span className="result-icon" style={{ color: TYPE_COLORS[r.type] }}>
+                  {TYPE_ICONS[r.type]}
+                </span>
+                <div className="result-text">
+                  <span className="result-title">{r.title}</span>
+                  {r.subtitle && <span className="result-sub">{r.subtitle}</span>}
+                </div>
+                <span className="result-type">{r.type}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Layout({ children, theme, setTheme }) {
   const { user, logout } = useAuth();
@@ -33,6 +171,9 @@ export default function Layout({ children, theme, setTheme }) {
           {collapsed ? '›' : '‹'}
         </button>
 
+        {/* Global search */}
+        <GlobalSearch collapsed={collapsed} />
+
         {/* Nav */}
         <nav className="sidebar-nav">
           {NAV.map(({ to, icon, label }) => (
@@ -49,26 +190,36 @@ export default function Layout({ children, theme, setTheme }) {
 
         {/* Bottom section */}
         <div className="sidebar-bottom">
-          {/* Theme toggle */}
           <button className="theme-btn" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
             <span className="nav-icon">{theme === 'dark' ? '☀' : '☾'}</span>
             {!collapsed && <span className="nav-label">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
           </button>
 
-          {/* User */}
           <div className="sidebar-user">
-            <div className="user-avatar">
+            <a
+              href={`/u/${user?.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="user-avatar"
+              title="View public profile"
+            >
               {user?.username?.[0]?.toUpperCase() || 'U'}
-            </div>
+            </a>
             {!collapsed && (
               <div className="user-info">
                 <span className="user-name">{user?.username}</span>
-                <span className="user-email">{user?.email}</span>
+                <a
+                  href={`/u/${user?.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="user-profile-link"
+                >
+                  View profile ↗
+                </a>
               </div>
             )}
           </div>
 
-          {/* Logout */}
           <button className="logout-btn" onClick={handleLogout}>
             <span className="nav-icon">⎋</span>
             {!collapsed && <span className="nav-label">Sign out</span>}
@@ -76,7 +227,6 @@ export default function Layout({ children, theme, setTheme }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="layout-main">
         {children}
       </main>
@@ -96,17 +246,23 @@ export default function Layout({ children, theme, setTheme }) {
           display: flex;
           flex-direction: column;
           padding: 24px 16px;
-          transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           position: sticky;
           top: 0;
           height: 100vh;
           overflow: hidden;
           flex-shrink: 0;
+          will-change: width;
         }
 
         .sidebar.collapsed {
           width: 68px;
           padding: 24px 10px;
+        }
+
+        .sidebar-logo,
+        .nav-label,
+        .user-info {
+          transition: opacity 0.2s, width 0.2s;
         }
 
         .sidebar-logo {
@@ -141,7 +297,7 @@ export default function Layout({ children, theme, setTheme }) {
           cursor: pointer;
           font-size: 16px;
           padding: 4px 8px;
-          margin: 8px 8px 16px;
+          margin: 8px 8px 8px;
           transition: all 0.2s;
           align-self: flex-end;
           width: calc(100% - 16px);
@@ -154,6 +310,160 @@ export default function Layout({ children, theme, setTheme }) {
           border-color: #f97316;
         }
 
+        /* Search */
+        .search-wrap {
+          position: relative;
+          margin: 0 0 12px;
+        }
+
+        .search-input-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 8px 10px;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-wrap:focus-within .search-input-wrap {
+          border-color: #f97316;
+          box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+        }
+
+        .search-icon {
+          font-size: 15px;
+          color: var(--muted);
+          flex-shrink: 0;
+        }
+
+        .search-input {
+          flex: 1;
+          background: none;
+          border: none;
+          outline: none;
+          font-size: 13px;
+          color: var(--text);
+          font-family: 'DM Sans', sans-serif;
+          min-width: 0;
+        }
+
+        .search-input::placeholder { color: var(--placeholder); }
+
+        .search-spinner {
+          width: 12px; height: 12px;
+          border: 2px solid var(--border);
+          border-top-color: #f97316;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          display: inline-block;
+          flex-shrink: 0;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .search-clear {
+          background: none; border: none;
+          color: var(--muted); cursor: pointer;
+          font-size: 11px; padding: 0;
+          flex-shrink: 0; line-height: 1;
+          transition: color 0.15s;
+        }
+
+        .search-clear:hover { color: var(--text); }
+
+        .search-icon-btn {
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          color: var(--muted);
+          cursor: pointer;
+          font-size: 16px;
+          padding: 8px;
+          width: 100%;
+          margin-bottom: 12px;
+          transition: all 0.2s;
+        }
+
+        .search-icon-btn:hover {
+          color: #f97316;
+          border-color: #f97316;
+        }
+
+        .search-dropdown {
+          position: absolute;
+          top: calc(100% + 6px);
+          left: 0; right: 0;
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          box-shadow: 0 8px 32px var(--shadow);
+          z-index: 9999;
+          overflow: hidden;
+          max-height: 320px;
+          overflow-y: auto;
+        }
+
+        .search-empty {
+          padding: 16px;
+          font-size: 13px;
+          color: var(--muted);
+          text-align: center;
+        }
+
+        .search-result {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          background: none;
+          border: none;
+          border-bottom: 1px solid var(--border);
+          padding: 10px 12px;
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.15s;
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        .search-result:last-child { border-bottom: none; }
+        .search-result:hover { background: var(--hover-bg); }
+
+        .result-icon {
+          font-size: 16px; flex-shrink: 0;
+        }
+
+        .result-text {
+          flex: 1;
+          display: flex; flex-direction: column;
+          gap: 2px; min-width: 0;
+        }
+
+        .result-title {
+          font-size: 13px; font-weight: 500;
+          color: var(--text);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .result-sub {
+          font-size: 11px; color: var(--muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .result-type {
+          font-size: 10px; font-weight: 600;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          flex-shrink: 0;
+        }
+
+        /* Nav */
         .sidebar-nav {
           display: flex;
           flex-direction: column;
@@ -181,11 +491,7 @@ export default function Layout({ children, theme, setTheme }) {
           font-family: 'DM Sans', sans-serif;
         }
 
-        .nav-item:hover, .theme-btn:hover, .logout-btn:hover {
-          background: var(--hover-bg);
-          color: var(--text);
-        }
-
+        .nav-item:hover, .theme-btn:hover { background: var(--hover-bg); color: var(--text); }
         .nav-item.active {
           background: rgba(249, 115, 22, 0.12);
           color: #f97316;
@@ -199,10 +505,7 @@ export default function Layout({ children, theme, setTheme }) {
           text-align: center;
         }
 
-        .nav-label {
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        .nav-label { overflow: hidden; text-overflow: ellipsis; }
 
         .sidebar-bottom {
           display: flex;
@@ -222,57 +525,61 @@ export default function Layout({ children, theme, setTheme }) {
         }
 
         .user-avatar {
-          width: 32px;
-          height: 32px;
+          width: 32px; height: 32px;
           border-radius: 50%;
           background: linear-gradient(135deg, #f97316, #fb923c);
           color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 13px;
-          font-weight: 700;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; font-weight: 700;
           flex-shrink: 0;
           font-family: 'Syne', sans-serif;
         }
 
         .user-info {
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          min-width: 0;
+          display: flex; flex-direction: column;
+          overflow: hidden; min-width: 0;
         }
 
         .user-name {
-          font-size: 13px;
-          font-weight: 600;
+          font-size: 13px; font-weight: 600;
           color: var(--text);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        .user-email {
-          font-size: 11px;
-          color: var(--muted);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+        .user-profile-link {
+          font-size: 11px; color: #f97316;
+          text-decoration: none; font-weight: 500;
+          transition: opacity 0.2s;
         }
 
-        .logout-btn {
-          color: var(--muted);
+        .user-profile-link:hover { opacity: 0.75; }
+
+        .user-avatar {
+          width: 32px; height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #f97316, #fb923c);
+          color: white;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; font-weight: 700;
+          flex-shrink: 0;
+          font-family: 'Syne', sans-serif;
+          text-decoration: none;
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .logout-btn:hover {
-          background: var(--danger-bg);
-          color: var(--danger-text);
+        .user-avatar:hover {
+          transform: scale(1.08);
+          box-shadow: 0 2px 8px rgba(249,115,22,0.4);
         }
+
+        .logout-btn { color: var(--muted); }
+        .logout-btn:hover { background: var(--danger-bg); color: var(--danger-text); }
 
         .layout-main {
           flex: 1;
-          overflow-y: auto;
           min-height: 100vh;
+          overflow: visible;
         }
       `}</style>
     </div>

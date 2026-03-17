@@ -37,8 +37,7 @@ function QuickLogModal({ topics, onClose, onSaved }) {
       onSaved();
       onClose();
     } catch (err) {
-        const detail = err.response?.data?.detail;
-        setError(typeof detail === 'string' ? detail : 'Validation error — check your inputs');
+      setError(err.response?.data?.detail || 'Failed to save log');
     } finally {
       setLoading(false);
     }
@@ -234,7 +233,8 @@ export default function Dashboard() {
       <style>{`
         .dash-root {
           padding: 40px 44px;
-          max-width: 1100px;
+          width: 100%;
+          box-sizing: border-box;
           animation: fadeIn 0.4s ease forwards;
         }
 

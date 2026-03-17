@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import api from '../api/axios';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PomodoroTimer from '../components/PomodoroTimer';
 
 function LogModal({ log, topics, onClose, onSaved }) {
     const editing = !!log?.id;
@@ -10,6 +14,8 @@ function LogModal({ log, topics, onClose, onSaved }) {
         time_spent: log?.time_spent || '',
         date: log?.date ? log.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
     });
+    const [tab, setTab] = useState('write');
+    const [showTimer, setShowTimer] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -26,11 +32,8 @@ function LogModal({ log, topics, onClose, onSaved }) {
                 time_spent: parseInt(form.time_spent),
                 date: new Date(form.date).toISOString(),
             };
-            if (editing) {
-                await api.put(`/logs/${log.id}`, payload);
-            } else {
-                await api.post('/logs/', payload);
-            }
+            if (editing) await api.put(`/logs/${log.id}`, payload);
+            else await api.post('/logs/', payload);
             onSaved();
             onClose();
         } catch (err) {
@@ -41,12 +44,22 @@ function LogModal({ log, topics, onClose, onSaved }) {
         }
     };
 
-    return (
+    return createPortal(
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-card modal-card-wide" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>{editing ? 'Edit log' : 'New log'}</h2>
-                    <button className="modal-close" onClick={onClose}>✕</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button
+                            type="button"
+                            className={`timer-toggle-btn ${showTimer ? 'active' : ''}`}
+                            onClick={() => setShowTimer(s => !s)}
+                            title="Pomodoro timer"
+                        >
+                            ⏱ Timer
+                        </button>
+                        <button className="modal-close" onClick={onClose}>✕</button>
+                    </div>
                 </div>
                 <form onSubmit={submit} className="modal-form">
                     <div className="field-row">
@@ -64,13 +77,45 @@ function LogModal({ log, topics, onClose, onSaved }) {
                             <input type="date" name="date" value={form.date} onChange={handle} required />
                         </div>
                     </div>
+
+                    {/* Markdown editor */}
                     <div className="field">
-                        <label>What did you learn?</label>
-                        <textarea
-                            name="notes" value={form.notes} onChange={handle}
-                            placeholder="Today I learned..." required rows={5}
-                        />
+                        <div className="editor-header">
+                            <label>Notes</label>
+                            <div className="editor-tabs">
+                                <button
+                                    type="button"
+                                    className={`editor-tab ${tab === 'write' ? 'active' : ''}`}
+                                    onClick={() => setTab('write')}
+                                >Write</button>
+                                <button
+                                    type="button"
+                                    className={`editor-tab ${tab === 'preview' ? 'active' : ''}`}
+                                    onClick={() => setTab('preview')}
+                                    disabled={!form.notes}
+                                >Preview</button>
+                            </div>
+                        </div>
+                        {tab === 'write' ? (
+                            <textarea
+                                name="notes"
+                                value={form.notes}
+                                onChange={handle}
+                                placeholder={`## What I learned today\n\n- Point 1\n- Point 2\n\n**Key insight:** ...`}
+                                required
+                                rows={10}
+                                className="md-textarea"
+                            />
+                        ) : (
+                            <div className="md-preview">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {form.notes}
+                                </ReactMarkdown>
+                            </div>
+                        )}
+                        <p className="md-hint">Supports **bold**, *italic*, `code`, lists, headers</p>
                     </div>
+
                     <div className="field">
                         <label>Time spent (minutes)</label>
                         <input
@@ -78,13 +123,22 @@ function LogModal({ log, topics, onClose, onSaved }) {
                             onChange={handle} placeholder="e.g. 45" min={1} required
                         />
                     </div>
+
+                    {showTimer && (
+                        <PomodoroTimer
+                            onSessionComplete={(mins) => {
+                                setForm(f => ({ ...f, time_spent: String(parseInt(f.time_spent || 0) + mins) }));
+                            }}
+                        />
+                    )}
                     {error && <p className="form-error">{error}</p>}
                     <button type="submit" className="submit-btn" disabled={loading}>
                         {loading ? <span className="spinner" /> : (editing ? 'Save changes' : 'Save log')}
                     </button>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -131,7 +185,11 @@ function LogCard({ log, topicMap, onEdit, onDelete }) {
                 </div>
             </div>
 
-            <p className="log-notes">{log.notes}</p>
+            <div className="log-notes">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {log.notes}
+                </ReactMarkdown>
+            </div>
 
             <div className="log-footer">
                 <span className="time-badge">
@@ -262,7 +320,8 @@ export default function Logs() {
             <style>{`
         .logs-root {
           padding: 40px 44px;
-          max-width: 860px;
+          width: 100%;
+          box-sizing: border-box;
           animation: fadeIn 0.4s ease forwards;
         }
 
@@ -380,7 +439,8 @@ export default function Logs() {
 
         .log-actions {
           display: flex; gap: 4px;
-          opacity: 0; transition: opacity 0.2s;
+          opacity: 0.4;
+          transition: opacity 0.2s;
         }
 
         .log-card:hover .log-actions { opacity: 1; }
@@ -399,9 +459,176 @@ export default function Logs() {
         .del-btn:hover { background: var(--danger-bg); color: var(--danger-text); }
 
         .log-notes {
-          font-size: 15px; color: var(--text);
+          font-size: 14px; color: var(--text);
           line-height: 1.65; margin: 0;
-          white-space: pre-wrap;
+        }
+
+        .log-notes p  { margin: 0 0 8px; }
+        .log-notes p:last-child { margin-bottom: 0; }
+        .log-notes h1, .log-notes h2, .log-notes h3 {
+          font-family: 'Syne', sans-serif;
+          font-weight: 700; color: var(--text);
+          margin: 12px 0 6px;
+        }
+        .log-notes h1 { font-size: 18px; }
+        .log-notes h2 { font-size: 16px; }
+        .log-notes h3 { font-size: 14px; }
+        .log-notes ul, .log-notes ol {
+          padding-left: 20px; margin: 6px 0;
+        }
+        .log-notes li { margin-bottom: 3px; }
+        .log-notes code {
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 4px;
+          padding: 1px 6px;
+          font-size: 12px;
+          font-family: 'JetBrains Mono', monospace;
+          color: #f97316;
+        }
+        .log-notes pre {
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 12px;
+          overflow-x: auto;
+          margin: 8px 0;
+        }
+        .log-notes pre code {
+          background: none; border: none;
+          padding: 0; color: var(--text);
+        }
+        .log-notes strong { font-weight: 600; color: var(--text); }
+        .log-notes em { font-style: italic; color: var(--muted); }
+        .log-notes blockquote {
+          border-left: 3px solid #f97316;
+          padding-left: 12px;
+          margin: 8px 0;
+          color: var(--muted);
+          font-style: italic;
+        }
+        .log-notes a { color: #f97316; text-decoration: underline; }
+        .log-notes hr {
+          border: none;
+          border-top: 1px solid var(--border);
+          margin: 12px 0;
+        }
+
+        .timer-toggle-btn {
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 8px; padding: 5px 12px;
+          font-size: 12px; font-weight: 500;
+          color: var(--muted); cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: all 0.2s;
+        }
+
+        .timer-toggle-btn:hover,
+        .timer-toggle-btn.active {
+          background: rgba(249,115,22,0.1);
+          border-color: #f97316;
+          color: #f97316;
+        }
+
+        /* Editor styles */
+        .modal-card-wide { max-width: 640px !important; }
+
+        .editor-header {
+          display: flex; align-items: center;
+          justify-content: space-between;
+          margin-bottom: 7px;
+        }
+
+        .editor-header label { margin-bottom: 0; }
+
+        .editor-tabs {
+          display: flex; gap: 2px;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 8px; padding: 3px;
+        }
+
+        .editor-tab {
+          background: none; border: none;
+          border-radius: 6px; padding: 4px 12px;
+          font-size: 12px; font-weight: 500;
+          color: var(--muted); cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: all 0.15s;
+        }
+
+        .editor-tab.active {
+          background: var(--card-bg);
+          color: var(--text);
+          box-shadow: 0 1px 3px var(--shadow);
+        }
+
+        .editor-tab:disabled {
+          opacity: 0.4; cursor: not-allowed;
+        }
+
+        .md-textarea {
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px; padding: 12px 14px;
+          font-size: 13px; color: var(--text);
+          font-family: 'JetBrains Mono', 'Courier New', monospace;
+          outline: none; resize: vertical; width: 100%;
+          box-sizing: border-box;
+          line-height: 1.7;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .md-textarea:focus {
+          border-color: #f97316;
+          box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+        }
+
+        .md-textarea::placeholder { color: var(--placeholder); }
+
+        .md-preview {
+          background: var(--input-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px; padding: 14px;
+          min-height: 200px;
+          font-size: 14px; color: var(--text);
+          line-height: 1.65;
+        }
+
+        .md-preview p  { margin: 0 0 8px; }
+        .md-preview p:last-child { margin-bottom: 0; }
+        .md-preview h1, .md-preview h2, .md-preview h3 {
+          font-family: 'Syne', sans-serif; font-weight: 700;
+          color: var(--text); margin: 12px 0 6px;
+        }
+        .md-preview h1 { font-size: 20px; }
+        .md-preview h2 { font-size: 17px; }
+        .md-preview h3 { font-size: 15px; }
+        .md-preview ul, .md-preview ol { padding-left: 20px; margin: 6px 0; }
+        .md-preview li { margin-bottom: 3px; }
+        .md-preview code {
+          background: var(--card-bg); border: 1px solid var(--border);
+          border-radius: 4px; padding: 1px 6px;
+          font-size: 12px; font-family: monospace; color: #f97316;
+        }
+        .md-preview pre {
+          background: var(--card-bg); border: 1px solid var(--border);
+          border-radius: 8px; padding: 12px;
+          overflow-x: auto; margin: 8px 0;
+        }
+        .md-preview pre code { background: none; border: none; padding: 0; color: var(--text); }
+        .md-preview strong { font-weight: 600; }
+        .md-preview em { font-style: italic; color: var(--muted); }
+        .md-preview blockquote {
+          border-left: 3px solid #f97316; padding-left: 12px;
+          margin: 8px 0; color: var(--muted); font-style: italic;
+        }
+        .md-preview a { color: #f97316; text-decoration: underline; }
+
+        .md-hint {
+          font-size: 11px; color: var(--placeholder);
+          margin-top: 6px;
         }
 
         .log-footer {
@@ -441,9 +668,12 @@ export default function Logs() {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.5);
           backdrop-filter: blur(4px);
-          display: flex; align-items: center;
-          justify-content: center; z-index: 1000;
+          display: flex; align-items: flex-start;
+          justify-content: center;
+          z-index: 1000;
           animation: fadeIn 0.2s ease;
+          overflow-y: auto;
+          padding: 40px 16px;
         }
 
         .modal-card {
@@ -453,6 +683,7 @@ export default function Logs() {
           width: 100%; max-width: 500px;
           box-shadow: 0 24px 64px rgba(0,0,0,0.3);
           animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          flex-shrink: 0;
         }
 
         @keyframes slideUp {

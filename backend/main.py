@@ -3,14 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine
 import models
-from routers import auth, topics, logs, resources, dashboard
+from routers import auth, topics, logs, resources, dashboard, search, profile
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="DevTrack API",
     description="Developer Learning Tracker",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -26,7 +26,9 @@ app.include_router(topics.router)
 app.include_router(logs.router)
 app.include_router(resources.router)
 app.include_router(dashboard.router)
+app.include_router(search.router)
+app.include_router(profile.router)
 
 @app.get("/")
 def root():
-    return {"message": "DevTrack API is running"}
+    return {"message": "DevTrack API v2 is running"}

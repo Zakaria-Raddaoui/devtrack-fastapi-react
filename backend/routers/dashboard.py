@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
-from typing import List
 
 import models
 import schemas
@@ -17,13 +16,15 @@ def get_stats(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user),
 ):
-    # Total hours spent (sum of all log time_spent in minutes → convert to hours)
     total_minutes = db.query(func.sum(models.Log.time_spent)).filter(
         models.Log.user_id == current_user.id
     ).scalar() or 0
-    total_hours = round(total_minutes / 60, 1)
 
-    # Topics counts
+    topics_to_learn = db.query(models.Topic).filter(
+        models.Topic.owner_id == current_user.id,
+        models.Topic.status == models.StatusEnum.to_learn
+    ).count()
+
     topics_in_progress = db.query(models.Topic).filter(
         models.Topic.owner_id == current_user.id,
         models.Topic.status == models.StatusEnum.learning
@@ -34,9 +35,7 @@ def get_stats(
         models.Topic.status == models.StatusEnum.mastered
     ).count()
 
-    # Weekly activity: last 7 days, group by date
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
-
     daily_logs = (
         db.query(
             func.date(models.Log.date).label("day"),
@@ -57,7 +56,8 @@ def get_stats(
     ]
 
     return schemas.DashboardStats(
-        total_hours=total_hours,
+        total_hours=round(total_minutes / 60, 1),
+        topics_to_learn=topics_to_learn,
         topics_in_progress=topics_in_progress,
         topics_mastered=topics_mastered,
         weekly_activity=weekly_activity,

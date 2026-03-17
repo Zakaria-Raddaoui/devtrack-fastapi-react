@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../api/axios';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -61,7 +62,7 @@ function ResourceModal({ resource, topics, onClose, onSaved }) {
         }
     };
 
-    return (
+    return createPortal(
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-card" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
@@ -110,7 +111,8 @@ function ResourceModal({ resource, topics, onClose, onSaved }) {
                     </button>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -305,7 +307,8 @@ export default function Resources() {
             <style>{`
         .resources-root {
           padding: 40px 44px;
-          max-width: 1100px;
+          width: 100%;
+          box-sizing: border-box;
           animation: fadeIn 0.4s ease forwards;
         }
 
@@ -445,7 +448,8 @@ export default function Resources() {
 
         .resource-actions {
           display: flex; gap: 4px;
-          opacity: 0; transition: opacity 0.2s;
+          opacity: 0.4;
+          transition: opacity 0.2s;
         }
 
         .resource-card:hover .resource-actions { opacity: 1; }

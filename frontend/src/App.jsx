@@ -7,13 +7,15 @@ import Dashboard from './pages/Dashboard';
 import Topics from './pages/Topics';
 import Logs from './pages/Logs';
 import Resources from './pages/Resources';
-
+import PublicProfile from './pages/PublicProfile';
 
 function ProtectedRoute({ children, theme, setTheme }) {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',
-      height:'100vh',color:'var(--muted)',fontFamily:'DM Sans,sans-serif',fontSize:14}}>
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      height: '100vh', color: 'var(--muted)', fontFamily: 'DM Sans,sans-serif', fontSize: 14
+    }}>
       Loading...
     </div>
   );
@@ -25,12 +27,13 @@ function AppRoutes({ theme, setTheme }) {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/login"     element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/dashboard" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Dashboard /></ProtectedRoute>} />
-      <Route path="/topics"    element={<ProtectedRoute theme={theme} setTheme={setTheme}><Topics /></ProtectedRoute>} />
-      <Route path="/logs"      element={<ProtectedRoute theme={theme} setTheme={setTheme}><Logs /></ProtectedRoute>} />
+      <Route path="/topics" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Topics /></ProtectedRoute>} />
+      <Route path="/logs" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Logs /></ProtectedRoute>} />
       <Route path="/resources" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Resources /></ProtectedRoute>} />
-      <Route path="*"          element={<Navigate to="/login" replace />} />
+      <Route path="/u/:username" element={<PublicProfile />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
