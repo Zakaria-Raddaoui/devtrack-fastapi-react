@@ -92,3 +92,20 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+# Optional auth — returns None if no token instead of raising
+from fastapi.security import OAuth2PasswordBearer
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+def get_optional_user(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> Optional[models.User]:
+    if not token:
+        return None
+    try:
+        token_data = decode_access_token(token)
+        return db.query(models.User).filter(models.User.username == token_data.username).first()
+    except Exception:
+        return None

@@ -2,27 +2,35 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import ShortcutsOverlay from './ShortcutsOverlay';
 
 const NAV = [
   { to: '/dashboard', icon: '⊡', label: 'Dashboard' },
   { to: '/topics', icon: '◈', label: 'Topics' },
   { to: '/logs', icon: '◷', label: 'Logs' },
+  { to: '/notes', icon: '◇', label: 'Notes' },
+  { to: '/roadmaps', icon: '⟳', label: 'Roadmaps' },
+  { to: '/goals', icon: '🎯', label: 'Goals' },
   { to: '/resources', icon: '⊞', label: 'Resources' },
+  { to: '/analytics', icon: '◎', label: 'Analytics' },
+  { to: '/assistant', icon: '⬡', label: 'AI Assistant' },
 ];
 
 const TYPE_ICONS = {
   topic: '◈',
   log: '◷',
   resource: '⊞',
+  note: '◇',
 };
 
 const TYPE_COLORS = {
   topic: '#f97316',
   log: '#3b82f6',
   resource: '#22c55e',
+  note: '#a855f7',
 };
 
-function GlobalSearch({ collapsed }) {
+function GlobalSearch({ collapsed, onExpand }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -54,7 +62,7 @@ function GlobalSearch({ collapsed }) {
   };
 
   const handleSelect = (result) => {
-    const routes = { topic: '/topics', log: '/logs', resource: '/resources' };
+    const routes = { topic: '/topics', log: '/logs', resource: '/resources', note: '/notes' };
     navigate(routes[result.type] || '/dashboard');
     setQuery('');
     setResults([]);
@@ -76,23 +84,29 @@ function GlobalSearch({ collapsed }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Keyboard shortcut: Ctrl+K
+  // Keyboard shortcut: Ctrl+K — expand sidebar if collapsed, then focus
   useEffect(() => {
     const handler = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        inputRef.current?.focus();
+        if (collapsed) {
+          onExpand();
+          // Wait for sidebar to expand before focusing
+          setTimeout(() => inputRef.current?.focus(), 280);
+        } else {
+          inputRef.current?.focus();
+        }
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, []);
+  }, [collapsed, onExpand]);
 
   if (collapsed) {
     return (
       <button
         className="search-icon-btn"
-        onClick={() => inputRef.current?.focus()}
+        onClick={() => { onExpand(); setTimeout(() => inputRef.current?.focus(), 280); }}
         title="Search (Ctrl+K)"
       >
         ⌕
@@ -157,13 +171,31 @@ export default function Layout({ children, theme, setTheme }) {
     navigate('/login');
   };
 
+  // Ctrl+1-9 navigation shortcuts
+  useEffect(() => {
+    const ROUTES = {
+      '1': '/dashboard', '2': '/topics', '3': '/logs',
+      '4': '/notes', '5': '/roadmaps', '6': '/goals',
+      '7': '/resources', '8': '/analytics', '9': '/assistant',
+    };
+    const handler = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+      const route = ROUTES[e.key];
+      if (route) { e.preventDefault(); navigate(route); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [navigate]);
+
   return (
     <div className="layout-root">
+      <ShortcutsOverlay />
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
         {/* Logo */}
         <div className="sidebar-logo">
           <span className="logo-icon">⬡</span>
-          {!collapsed && <span className="logo-text">DevTrack</span>}
+          <span className="logo-text">DevTrack</span>
         </div>
 
         {/* Collapse toggle */}
@@ -172,7 +204,7 @@ export default function Layout({ children, theme, setTheme }) {
         </button>
 
         {/* Global search */}
-        <GlobalSearch collapsed={collapsed} />
+        <GlobalSearch collapsed={collapsed} onExpand={() => setCollapsed(false)} />
 
         {/* Nav */}
         <nav className="sidebar-nav">
@@ -183,7 +215,7 @@ export default function Layout({ children, theme, setTheme }) {
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             >
               <span className="nav-icon">{icon}</span>
-              {!collapsed && <span className="nav-label">{label}</span>}
+              <span className="nav-label">{label}</span>
             </NavLink>
           ))}
         </nav>
@@ -192,38 +224,29 @@ export default function Layout({ children, theme, setTheme }) {
         <div className="sidebar-bottom">
           <button className="theme-btn" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
             <span className="nav-icon">{theme === 'dark' ? '☀' : '☾'}</span>
-            {!collapsed && <span className="nav-label">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
+            <span className="nav-label">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           </button>
 
           <div className="sidebar-user">
-            <a
-              href={`/u/${user?.username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="user-avatar"
-              title="View public profile"
-            >
+            <NavLink to="/profile" className="user-avatar" title="Your profile">
               {user?.username?.[0]?.toUpperCase() || 'U'}
-            </a>
-            {!collapsed && (
-              <div className="user-info">
-                <span className="user-name">{user?.username}</span>
-                <a
-                  href={`/u/${user?.username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="user-profile-link"
-                >
-                  View profile ↗
-                </a>
-              </div>
-            )}
+            </NavLink>
+            <div className="user-info">
+              <span className="user-name">{user?.username}</span>
+              <NavLink to="/profile" className="user-profile-link">
+                Edit profile ↗
+              </NavLink>
+            </div>
           </div>
 
           <button className="logout-btn" onClick={handleLogout}>
             <span className="nav-icon">⎋</span>
-            {!collapsed && <span className="nav-label">Sign out</span>}
+            <span className="nav-label">Sign out</span>
           </button>
+          <div className="sh-hint-row">
+            <kbd className="sh-hint-key">Ctrl+/</kbd>
+            <span className="nav-label sh-hint-text">Shortcuts</span>
+          </div>
         </div>
       </aside>
 
@@ -251,7 +274,8 @@ export default function Layout({ children, theme, setTheme }) {
           height: 100vh;
           overflow: hidden;
           flex-shrink: 0;
-          will-change: width;
+          transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                      padding 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .sidebar.collapsed {
@@ -262,7 +286,17 @@ export default function Layout({ children, theme, setTheme }) {
         .sidebar-logo,
         .nav-label,
         .user-info {
-          transition: opacity 0.2s, width 0.2s;
+          transition: opacity 0.2s ease, max-width 0.25s ease;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+
+        .sidebar.collapsed .nav-label,
+        .sidebar.collapsed .user-info,
+        .sidebar.collapsed .logo-text {
+          opacity: 0;
+          max-width: 0;
+          pointer-events: none;
         }
 
         .sidebar-logo {
@@ -273,6 +307,7 @@ export default function Layout({ children, theme, setTheme }) {
           margin-bottom: 8px;
           overflow: hidden;
           white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .logo-icon {
@@ -287,6 +322,10 @@ export default function Layout({ children, theme, setTheme }) {
           font-size: 18px;
           color: var(--text);
           letter-spacing: -0.5px;
+          transition: opacity 0.2s ease, max-width 0.25s ease;
+          overflow: hidden;
+          white-space: nowrap;
+          max-width: 160px;
         }
 
         .collapse-btn {
@@ -469,6 +508,9 @@ export default function Layout({ children, theme, setTheme }) {
           flex-direction: column;
           gap: 4px;
           flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          min-height: 0;
         }
 
         .nav-item, .theme-btn, .logout-btn {
@@ -574,6 +616,23 @@ export default function Layout({ children, theme, setTheme }) {
         }
 
         .logout-btn { color: var(--muted); }
+
+        .sh-hint-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 8px 12px; opacity: 0.5;
+        }
+
+        .sh-hint-key {
+          display: inline-flex; align-items: center; justify-content: center;
+          background: var(--bg); border: 1px solid var(--border);
+          border-bottom: 2px solid var(--border);
+          border-radius: 5px; padding: 2px 7px;
+          font-size: 11px; font-weight: 700;
+          color: var(--muted); font-family: 'DM Sans', sans-serif;
+          flex-shrink: 0;
+        }
+
+        .sh-hint-text { font-size: 12px; color: var(--muted); }
         .logout-btn:hover { background: var(--danger-bg); color: var(--danger-text); }
 
         .layout-main {

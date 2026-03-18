@@ -1,17 +1,49 @@
 # DevTrack — Developer Learning Tracker
 
-A full-stack web application for developers to track their learning journey. Log daily progress, manage topics, save useful resources, and visualize your growth over time.
+A full-stack web application for developers to track their learning journey. Log daily progress, manage topics, save resources, write notes, build roadmaps, and get AI-powered learning advice — all in one place.
 
 ---
 
 ## Features
 
-- **Authentication** — Register, login, and JWT-protected routes
-- **Topics** — Create and manage learning topics with difficulty levels and status tracking
-- **Daily Logs** — Write daily learning entries with time tracking per topic
-- **Resources** — Save useful links, videos, articles, and docs linked to topics
-- **Dashboard** — Visual overview of hours spent, topics in progress, and weekly activity chart
-- **Dark / Light mode** — Persistent theme toggle
+### 📚 Learning Management
+- **Topics** — Kanban board with drag & drop across To Learn / Learning / Mastered columns. Set goal hours and track progress with a live progress bar.
+- **Daily Logs** — Rich markdown editor with write/preview toggle and built-in Pomodoro timer that auto-fills time spent.
+- **Resources** — Save links, videos, articles, and docs linked to topics. Filter by type and topic.
+- **Roadmaps** — Build curated learning paths with ordered steps. Check off steps, link them to topics, track completion with an animated progress ring.
+
+### 📝 Notes
+- Full markdown wiki with folder organization
+- Two-panel layout — note list on left, full editor on right
+- Auto-save with 1 second debounce
+- Right-click context menu — move to folder, duplicate, delete
+- Ctrl+E toggles between preview and edit mode
+- Pin important notes to the top
+
+### 📊 Dashboard
+- Stats cards — total hours, topics in progress, mastered, weekly activity
+- Weekly activity area chart
+- Quick log button directly from the dashboard
+
+### 🤖 AI Learning Assistant
+- Powered by Groq (Llama 3.3 70B) — free tier available
+- Reads your actual topics, logs, and notes for personalized advice
+- Streaming responses with typing effect
+- Ask for study plans, quizzes, summaries, next steps
+
+### 🔍 Global Search
+- Ctrl+K shortcut from anywhere in the app
+- Searches across topics, logs, resources, and notes simultaneously
+
+### 👤 Public Profile
+- Shareable profile page at `/u/username`
+- Shows topics, total hours, and learning stats — no login required
+
+### 🎨 Design
+- Dark / Light theme toggle with persistent preference
+- Amber / orange accent color system
+- Syne + DM Sans typography
+- Smooth animations and transitions throughout
 
 ---
 
@@ -22,9 +54,10 @@ A full-stack web application for developers to track their learning journey. Log
 |---|---|
 | FastAPI | REST API framework |
 | PostgreSQL | Relational database |
-| SQLAlchemy | ORM |
-| Pydantic v2 | Data validation and schemas |
-| PyJWT + Passlib | Authentication and password hashing |
+| SQLAlchemy 2.x | ORM |
+| Pydantic v2 | Data validation |
+| PyJWT + Passlib/bcrypt | Authentication |
+| Groq SDK | AI assistant |
 | Uvicorn | ASGI server |
 
 ### Frontend
@@ -32,9 +65,10 @@ A full-stack web application for developers to track their learning journey. Log
 |---|---|
 | React 18 | UI framework |
 | React Router v6 | Client-side routing |
+| React Beautiful DnD | Kanban drag & drop |
 | Axios | HTTP client with JWT interceptor |
 | Recharts | Dashboard charts |
-| TailwindCSS | Utility-first styling |
+| React Markdown + remark-gfm | Markdown rendering |
 
 ### DevOps
 | Technology | Purpose |
@@ -56,7 +90,13 @@ devtrack-fastapi-react/
 │   │   ├── topics.py
 │   │   ├── logs.py
 │   │   ├── resources.py
-│   │   └── dashboard.py
+│   │   ├── notes.py
+│   │   ├── folders.py
+│   │   ├── roadmaps.py
+│   │   ├── dashboard.py
+│   │   ├── search.py
+│   │   ├── profile.py
+│   │   └── assistant.py
 │   ├── main.py
 │   ├── models.py
 │   ├── schemas.py
@@ -70,14 +110,19 @@ devtrack-fastapi-react/
 │   │   ├── api/axios.js
 │   │   ├── components/
 │   │   │   ├── Layout.jsx
-│   │   │   └── ConfirmDialog.jsx
+│   │   │   ├── ConfirmDialog.jsx
+│   │   │   └── PomodoroTimer.jsx
 │   │   ├── context/AuthContext.jsx
 │   │   ├── pages/
 │   │   │   ├── Login.jsx
 │   │   │   ├── Dashboard.jsx
 │   │   │   ├── Topics.jsx
+│   │   │   ├── TopicDetail.jsx
 │   │   │   ├── Logs.jsx
-│   │   │   └── Resources.jsx
+│   │   │   ├── Resources.jsx
+│   │   │   ├── Notes.jsx
+│   │   │   ├── Roadmaps.jsx
+│   │   │   └── Assistant.jsx
 │   │   ├── App.jsx
 │   │   ├── index.js
 │   │   └── index.css
@@ -96,9 +141,9 @@ devtrack-fastapi-react/
 ## Getting Started
 
 ### Prerequisites
-
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
 - [Git](https://git-scm.com/)
+- A free [Groq API key](https://console.groq.com) for the AI assistant (optional)
 
 ### Installation
 
@@ -120,6 +165,7 @@ POSTGRES_PASSWORD=postgres
 POSTGRES_DB=devtrack_db
 DATABASE_URL=postgresql://postgres:postgres@db:5432/devtrack_db
 SECRET_KEY=your-very-long-random-secret-key
+GROQ_API_KEY=your-groq-api-key
 REACT_APP_API_URL=http://localhost:8000
 ```
 
@@ -153,6 +199,7 @@ docker compose up --build
 | GET | `/topics/` | List all topics |
 | POST | `/topics/` | Create a topic |
 | GET | `/topics/{id}` | Get a topic |
+| GET | `/topics/{id}/detail` | Get topic with logs, resources and stats |
 | PUT | `/topics/{id}` | Update a topic |
 | DELETE | `/topics/{id}` | Delete a topic |
 
@@ -161,7 +208,6 @@ docker compose up --build
 |---|---|---|
 | GET | `/logs/` | List all logs |
 | POST | `/logs/` | Create a log entry |
-| GET | `/logs/{id}` | Get a log |
 | PUT | `/logs/{id}` | Update a log |
 | DELETE | `/logs/{id}` | Delete a log |
 
@@ -170,33 +216,57 @@ docker compose up --build
 |---|---|---|
 | GET | `/resources/` | List all resources |
 | POST | `/resources/` | Save a resource |
-| GET | `/resources/{id}` | Get a resource |
 | PUT | `/resources/{id}` | Update a resource |
 | DELETE | `/resources/{id}` | Delete a resource |
 
-### Dashboard
+### Notes & Folders
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/notes/` | List all notes |
+| POST | `/notes/` | Create a note |
+| PUT | `/notes/{id}` | Update a note |
+| DELETE | `/notes/{id}` | Delete a note |
+| GET | `/folders/` | List all folders |
+| POST | `/folders/` | Create a folder |
+| PUT | `/folders/{id}` | Rename a folder |
+| DELETE | `/folders/{id}` | Delete a folder |
+
+### Roadmaps
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/roadmaps/` | List all roadmaps |
+| POST | `/roadmaps/` | Create a roadmap |
+| PUT | `/roadmaps/{id}` | Update a roadmap |
+| DELETE | `/roadmaps/{id}` | Delete a roadmap |
+| POST | `/roadmaps/{id}/steps` | Add a step |
+| PUT | `/roadmaps/{id}/steps/{step_id}` | Update a step |
+| DELETE | `/roadmaps/{id}/steps/{step_id}` | Delete a step |
+
+### Other
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/dashboard/stats` | Get learning statistics |
+| GET | `/search/?q=query` | Search across all content |
+| GET | `/u/{username}` | Get public profile |
+| POST | `/assistant/chat` | Chat with AI assistant |
 
 ---
 
 ## Development
 
-To stop the application:
 ```bash
+# Stop containers
 docker compose down
-```
 
-To stop and remove all data (including the database):
-```bash
+# Stop and wipe database
 docker compose down -v
-```
 
-To view logs:
-```bash
+# View logs
 docker compose logs backend
 docker compose logs frontend
+
+# Rebuild after dependency changes
+docker compose up --build
 ```
 
 ---

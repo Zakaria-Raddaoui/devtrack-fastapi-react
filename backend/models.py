@@ -29,9 +29,15 @@ class User(Base):
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
     updated_at      = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    topics    = relationship("Topic",    back_populates="owner", cascade="all, delete-orphan")
-    logs      = relationship("Log",      back_populates="user",  cascade="all, delete-orphan")
-    resources = relationship("Resource", back_populates="owner", cascade="all, delete-orphan")
+    topics        = relationship("Topic",        back_populates="owner", cascade="all, delete-orphan")
+    logs          = relationship("Log",          back_populates="user",  cascade="all, delete-orphan")
+    resources     = relationship("Resource",     back_populates="owner", cascade="all, delete-orphan")
+    notes         = relationship("Note",         back_populates="owner", cascade="all, delete-orphan")
+    roadmaps      = relationship("Roadmap",      back_populates="owner", cascade="all, delete-orphan")
+    folders       = relationship("Folder",       back_populates="owner", cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessage",  back_populates="owner", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="owner", cascade="all, delete-orphan")
+    goals         = relationship("Goal",         back_populates="owner", cascade="all, delete-orphan")
 
 
 class Topic(Base):
@@ -76,7 +82,114 @@ class Resource(Base):
     resource_type = Column(String(50), nullable=True)
     topic_id      = Column(Integer, ForeignKey("topics.id"), nullable=True)
     owner_id      = Column(Integer, ForeignKey("users.id"), nullable=False)
+    rating        = Column(Integer, nullable=True)   # 1-5
+    is_read       = Column(Boolean, default=False)
+    notes         = Column(Text, nullable=True)
     created_at    = Column(DateTime(timezone=True), server_default=func.now())
 
     owner = relationship("User",  back_populates="resources")
     topic = relationship("Topic", back_populates="resources")
+
+
+class Note(Base):
+    __tablename__ = "notes"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    title      = Column(String(200), nullable=False, index=True)
+    content    = Column(Text, nullable=True)
+    tags       = Column(String(500), nullable=True)
+    is_pinned  = Column(Boolean, default=False)
+    folder_id  = Column(Integer, ForeignKey("folders.id"), nullable=True)
+    owner_id   = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    owner  = relationship("User", back_populates="notes")
+    folder = relationship("Folder", back_populates="notes")
+
+
+class Roadmap(Base):
+    __tablename__ = "roadmaps"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    title       = Column(String(200), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    owner_id    = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at  = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at  = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    owner = relationship("User", back_populates="roadmaps")
+    steps = relationship("RoadmapStep", back_populates="roadmap", cascade="all, delete-orphan", order_by="RoadmapStep.order")
+
+
+class RoadmapStep(Base):
+    __tablename__ = "roadmap_steps"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    title        = Column(String(200), nullable=False)
+    description  = Column(Text, nullable=True)
+    order        = Column(Integer, nullable=False, default=0)
+    is_completed = Column(Boolean, default=False)
+    topic_id     = Column(Integer, ForeignKey("topics.id"), nullable=True)
+    roadmap_id   = Column(Integer, ForeignKey("roadmaps.id"), nullable=False)
+    created_at   = Column(DateTime(timezone=True), server_default=func.now())
+
+    roadmap = relationship("Roadmap", back_populates="steps")
+    topic   = relationship("Topic")
+
+
+class Folder(Base):
+    __tablename__ = "folders"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    title      = Column(String(100), nullable=False)
+    owner_id   = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    owner = relationship("User", back_populates="folders")
+    notes = relationship("Note", back_populates="folder")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    role            = Column(String(20), nullable=False)
+    content         = Column(Text, nullable=False)
+    conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=False)
+    owner_id        = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at      = Column(DateTime(timezone=True), server_default=func.now())
+
+    owner        = relationship("User", back_populates="chat_messages")
+    conversation = relationship("Conversation", back_populates="messages")
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    title      = Column(String(200), nullable=False, default="New chat")
+    owner_id   = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    owner    = relationship("User", back_populates="conversations")
+    messages = relationship("ChatMessage", back_populates="conversation", cascade="all, delete-orphan", order_by="ChatMessage.created_at")
+
+
+class Goal(Base):
+    __tablename__ = "goals"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    title        = Column(String(200), nullable=False)
+    description  = Column(Text, nullable=True)
+    target_hours = Column(Float, nullable=True)
+    target_date  = Column(DateTime(timezone=True), nullable=True)
+    topic_id     = Column(Integer, ForeignKey("topics.id"), nullable=True)
+    is_completed = Column(Boolean, default=False)
+    owner_id     = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at   = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at   = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    owner = relationship("User", back_populates="goals")
+    topic = relationship("Topic")

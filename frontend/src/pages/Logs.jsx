@@ -7,317 +7,605 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import PomodoroTimer from '../components/PomodoroTimer';
 
 function LogModal({ log, topics, onClose, onSaved }) {
-    const editing = !!log?.id;
-    const [form, setForm] = useState({
-        topic_id: log?.topic_id || '',
-        notes: log?.notes || '',
-        time_spent: log?.time_spent || '',
-        date: log?.date ? log.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
-    });
-    const [tab, setTab] = useState('write');
-    const [showTimer, setShowTimer] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+  const editing = !!log?.id;
+  const [form, setForm] = useState({
+    topic_id: log?.topic_id || '',
+    notes: log?.notes || '',
+    time_spent: log?.time_spent || '',
+    date: log?.date ? log.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+  });
+  const [tab, setTab] = useState('write');
+  const [showTimer, setShowTimer] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-    const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-    const submit = async e => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
-            const payload = {
-                topic_id: parseInt(form.topic_id),
-                notes: form.notes,
-                time_spent: parseInt(form.time_spent),
-                date: new Date(form.date).toISOString(),
-            };
-            if (editing) await api.put(`/logs/${log.id}`, payload);
-            else await api.post('/logs/', payload);
-            onSaved();
-            onClose();
-        } catch (err) {
-            const detail = err.response?.data?.detail;
-            setError(typeof detail === 'string' ? detail : 'Validation error — check your inputs');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const submit = async e => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const payload = {
+        topic_id: parseInt(form.topic_id),
+        notes: form.notes,
+        time_spent: parseInt(form.time_spent),
+        date: new Date(form.date).toISOString(),
+      };
+      if (editing) await api.put(`/logs/${log.id}`, payload);
+      else await api.post('/logs/', payload);
+      onSaved();
+      onClose();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      setError(typeof detail === 'string' ? detail : 'Validation error — check your inputs');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return createPortal(
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-card modal-card-wide" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2>{editing ? 'Edit log' : 'New log'}</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <button
-                            type="button"
-                            className={`timer-toggle-btn ${showTimer ? 'active' : ''}`}
-                            onClick={() => setShowTimer(s => !s)}
-                            title="Pomodoro timer"
-                        >
-                            ⏱ Timer
-                        </button>
-                        <button className="modal-close" onClick={onClose}>✕</button>
-                    </div>
-                </div>
-                <form onSubmit={submit} className="modal-form">
-                    <div className="field-row">
-                        <div className="field">
-                            <label>Topic</label>
-                            <select name="topic_id" value={form.topic_id} onChange={handle} required>
-                                <option value="">Select topic...</option>
-                                {topics.map(t => (
-                                    <option key={t.id} value={t.id}>{t.title}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="field">
-                            <label>Date</label>
-                            <input type="date" name="date" value={form.date} onChange={handle} required />
-                        </div>
-                    </div>
-
-                    {/* Markdown editor */}
-                    <div className="field">
-                        <div className="editor-header">
-                            <label>Notes</label>
-                            <div className="editor-tabs">
-                                <button
-                                    type="button"
-                                    className={`editor-tab ${tab === 'write' ? 'active' : ''}`}
-                                    onClick={() => setTab('write')}
-                                >Write</button>
-                                <button
-                                    type="button"
-                                    className={`editor-tab ${tab === 'preview' ? 'active' : ''}`}
-                                    onClick={() => setTab('preview')}
-                                    disabled={!form.notes}
-                                >Preview</button>
-                            </div>
-                        </div>
-                        {tab === 'write' ? (
-                            <textarea
-                                name="notes"
-                                value={form.notes}
-                                onChange={handle}
-                                placeholder={`## What I learned today\n\n- Point 1\n- Point 2\n\n**Key insight:** ...`}
-                                required
-                                rows={10}
-                                className="md-textarea"
-                            />
-                        ) : (
-                            <div className="md-preview">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {form.notes}
-                                </ReactMarkdown>
-                            </div>
-                        )}
-                        <p className="md-hint">Supports **bold**, *italic*, `code`, lists, headers</p>
-                    </div>
-
-                    <div className="field">
-                        <label>Time spent (minutes)</label>
-                        <input
-                            type="number" name="time_spent" value={form.time_spent}
-                            onChange={handle} placeholder="e.g. 45" min={1} required
-                        />
-                    </div>
-
-                    {showTimer && (
-                        <PomodoroTimer
-                            onSessionComplete={(mins) => {
-                                setForm(f => ({ ...f, time_spent: String(parseInt(f.time_spent || 0) + mins) }));
-                            }}
-                        />
-                    )}
-                    {error && <p className="form-error">{error}</p>}
-                    <button type="submit" className="submit-btn" disabled={loading}>
-                        {loading ? <span className="spinner" /> : (editing ? 'Save changes' : 'Save log')}
-                    </button>
-                </form>
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card modal-card-wide" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{editing ? 'Edit log' : 'New log'}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              className={`timer-toggle-btn ${showTimer ? 'active' : ''}`}
+              onClick={() => setShowTimer(s => !s)}
+              title="Pomodoro timer"
+            >
+              ⏱ Timer
+            </button>
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
+        </div>
+        <form onSubmit={submit} className="modal-form">
+          <div className="field-row">
+            <div className="field">
+              <label>Topic</label>
+              <select name="topic_id" value={form.topic_id} onChange={handle} required>
+                <option value="">Select topic...</option>
+                {topics.map(t => (
+                  <option key={t.id} value={t.id}>{t.title}</option>
+                ))}
+              </select>
             </div>
-        </div>,
-        document.body
-    );
+            <div className="field">
+              <label>Date</label>
+              <input type="date" name="date" value={form.date} onChange={handle} required />
+            </div>
+          </div>
+
+          {/* Markdown editor */}
+          <div className="field">
+            <div className="editor-header">
+              <label>Notes</label>
+              <div className="editor-tabs">
+                <button
+                  type="button"
+                  className={`editor-tab ${tab === 'write' ? 'active' : ''}`}
+                  onClick={() => setTab('write')}
+                >Write</button>
+                <button
+                  type="button"
+                  className={`editor-tab ${tab === 'preview' ? 'active' : ''}`}
+                  onClick={() => setTab('preview')}
+                  disabled={!form.notes}
+                >Preview</button>
+              </div>
+            </div>
+            {tab === 'write' ? (
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handle}
+                placeholder={`## What I learned today\n\n- Point 1\n- Point 2\n\n**Key insight:** ...`}
+                required
+                rows={10}
+                className="md-textarea"
+              />
+            ) : (
+              <div className="md-preview">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {form.notes}
+                </ReactMarkdown>
+              </div>
+            )}
+            <p className="md-hint">Supports **bold**, *italic*, `code`, lists, headers</p>
+          </div>
+
+          <div className="field">
+            <label>Time spent (minutes)</label>
+            <input
+              type="number" name="time_spent" value={form.time_spent}
+              onChange={handle} placeholder="e.g. 45" min={1} required
+            />
+          </div>
+
+          {showTimer && (
+            <PomodoroTimer
+              onSessionComplete={(mins) => {
+                setForm(f => ({ ...f, time_spent: String(parseInt(f.time_spent || 0) + mins) }));
+              }}
+            />
+          )}
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" className="submit-btn" disabled={loading}>
+            {loading ? <span className="spinner" /> : (editing ? 'Save changes' : 'Save log')}
+          </button>
+        </form>
+      </div>
+    </div>,
+    document.body
+  );
 }
 
 function LogCard({ log, topicMap, onEdit, onDelete }) {
-    const [deleting, setDeleting] = useState(false);
-    const [confirm, setConfirm] = useState(false);
-    const topic = topicMap[log.topic_id];
+  const [deleting, setDeleting] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const topic = topicMap[log.topic_id];
 
-    const handleDelete = async () => {
-        setDeleting(true);
-        try {
-            await api.delete(`/logs/${log.id}`);
-            onDelete();
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setDeleting(false);
-            setConfirm(false);
-        }
-    };
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/logs/${log.id}`);
+      onDelete();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeleting(false);
+      setConfirm(false);
+    }
+  };
 
-    const hours = Math.floor(log.time_spent / 60);
-    const mins = log.time_spent % 60;
-    const timeLabel = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  const hours = Math.floor(log.time_spent / 60);
+  const mins = log.time_spent % 60;
+  const timeLabel = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
-    return (
-        <div className="log-card">
-            <div className="log-top">
-                <div className="log-meta">
-                    <span className="log-date">
-                        {new Date(log.date).toLocaleDateString('en-US', {
-                            weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-                        })}
-                    </span>
-                    {topic && (
-                        <span className="log-topic">{topic.title}</span>
-                    )}
-                </div>
-                <div className="log-actions">
-                    <button className="icon-btn edit-btn" onClick={() => onEdit(log)} title="Edit">✎</button>
-                    <button className="icon-btn del-btn" onClick={() => setConfirm(true)} disabled={deleting} title="Delete">
-                        {deleting ? '...' : '✕'}
-                    </button>
-                </div>
-            </div>
-
-            <div className="log-notes">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {log.notes}
-                </ReactMarkdown>
-            </div>
-
-            <div className="log-footer">
-                <span className="time-badge">
-                    <span className="time-icon">◷</span> {timeLabel}
-                </span>
-            </div>
-            {confirm && (
-                <ConfirmDialog
-                    title="Delete log"
-                    message="Are you sure you want to delete this log entry? This action cannot be undone."
-                    onConfirm={handleDelete}
-                    onCancel={() => setConfirm(false)}
-                />
-            )}
+  return (
+    <div className="log-card">
+      <div className="log-top">
+        <div className="log-meta">
+          <span className="log-date">
+            {new Date(log.date).toLocaleDateString('en-US', {
+              weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+            })}
+          </span>
+          {topic && (
+            <span className="log-topic">{topic.title}</span>
+          )}
         </div>
-    );
+        <div className="log-actions">
+          <button className="icon-btn edit-btn" onClick={() => onEdit(log)} title="Edit">✎</button>
+          <button className="icon-btn del-btn" onClick={() => setConfirm(true)} disabled={deleting} title="Delete">
+            {deleting ? '...' : '✕'}
+          </button>
+        </div>
+      </div>
+
+      <div className="log-notes">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {log.notes}
+        </ReactMarkdown>
+      </div>
+
+      <div className="log-footer">
+        <span className="time-badge">
+          <span className="time-icon">◷</span> {timeLabel}
+        </span>
+      </div>
+      {confirm && (
+        <ConfirmDialog
+          title="Delete log"
+          message="Are you sure you want to delete this log entry? This action cannot be undone."
+          onConfirm={handleDelete}
+          onCancel={() => setConfirm(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Calendar View ────────────────────────────────────────────────────────────
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function CalendarView({ logs, topicMap, onEdit, onDelete, onNewLog }) {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [selected, setSelected] = useState(null); // selected date string YYYY-MM-DD
+
+  const prevMonth = () => {
+    if (month === 0) { setYear(y => y - 1); setMonth(11); }
+    else setMonth(m => m - 1);
+  };
+
+  const nextMonth = () => {
+    if (month === 11) { setYear(y => y + 1); setMonth(0); }
+    else setMonth(m => m + 1);
+  };
+
+  // Build calendar grid
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  // Monday-first: 0=Mon..6=Sun
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const totalCells = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7;
+
+  const cells = [];
+  for (let i = 0; i < totalCells; i++) {
+    const dayNum = i - startOffset + 1;
+    if (dayNum < 1 || dayNum > lastDay.getDate()) {
+      cells.push(null);
+    } else {
+      cells.push(dayNum);
+    }
+  }
+
+  // Group logs by date string
+  const logsByDate = {};
+  logs.forEach(log => {
+    const d = new Date(log.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!logsByDate[key]) logsByDate[key] = [];
+    logsByDate[key].push(log);
+  });
+
+  const dateKey = (day) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const selectedLogs = selected ? (logsByDate[selected] || []) : [];
+
+  // Total hours this month
+  const monthLogs = Object.entries(logsByDate)
+    .filter(([k]) => k.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
+    .flatMap(([, v]) => v);
+  const monthHours = (monthLogs.reduce((s, l) => s + l.time_spent, 0) / 60).toFixed(1);
+  const activeDays = new Set(monthLogs.map(l => {
+    const d = new Date(l.date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })).size;
+
+  return (
+    <div className="cal-root">
+      {/* Month nav */}
+      <div className="cal-header">
+        <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
+        <div className="cal-month-label">
+          <span className="cal-month">{MONTHS[month]}</span>
+          <span className="cal-year">{year}</span>
+        </div>
+        <button className="cal-nav-btn" onClick={nextMonth}>›</button>
+        <div className="cal-month-stats">
+          <span className="cal-stat"><strong>{monthHours}h</strong> this month</span>
+          <span className="cal-stat"><strong>{activeDays}</strong> active days</span>
+        </div>
+      </div>
+
+      <div className="cal-body">
+        {/* Left: grid */}
+        <div className="cal-grid-wrap">
+          {/* Day headers */}
+          <div className="cal-day-headers">
+            {DAYS.map(d => (
+              <div key={d} className="cal-day-header">{d}</div>
+            ))}
+          </div>
+
+          {/* Cells */}
+          <div className="cal-grid">
+            {cells.map((day, i) => {
+              if (!day) return <div key={i} className="cal-cell empty" />;
+              const key = dateKey(day);
+              const dayLogs = logsByDate[key] || [];
+              const isToday = key === todayKey;
+              const isSel = key === selected;
+              const mins = dayLogs.reduce((s, l) => s + l.time_spent, 0);
+              const hrs = (mins / 60).toFixed(1);
+              const intensity = mins === 0 ? 0 : mins < 30 ? 1 : mins < 60 ? 2 : mins < 120 ? 3 : 4;
+
+              return (
+                <div
+                  key={i}
+                  className={`cal-cell ${isToday ? 'today' : ''} ${isSel ? 'selected' : ''} ${dayLogs.length > 0 ? 'has-logs' : ''}`}
+                  onClick={() => setSelected(isSel ? null : key)}
+                >
+                  <span className="cal-day-num">{day}</span>
+                  {dayLogs.length > 0 && (
+                    <>
+                      <div className={`cal-intensity i${intensity}`} />
+                      <span className="cal-log-count">{dayLogs.length}</span>
+                    </>
+                  )}
+                  {mins > 0 && (
+                    <span className="cal-hrs">{hrs}h</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="cal-legend">
+            <span className="cal-legend-label">Less</span>
+            {[0, 1, 2, 3, 4].map(i => (
+              <div key={i} className={`cal-legend-dot i${i}`} />
+            ))}
+            <span className="cal-legend-label">More</span>
+          </div>
+        </div>
+
+        {/* Right: selected day logs */}
+        <div className="cal-side">
+          {!selected ? (
+            <div className="cal-side-empty">
+              <span className="cal-side-empty-icon">◷</span>
+              <p>Click a day to see its logs</p>
+            </div>
+          ) : (
+            <>
+              <div className="cal-side-header">
+                <h3 className="cal-side-date">
+                  {new Date(selected + 'T12:00:00').toLocaleDateString('en-US', {
+                    weekday: 'long', month: 'long', day: 'numeric'
+                  })}
+                </h3>
+                <button className="cal-new-btn" onClick={onNewLog}>+ New</button>
+              </div>
+              {selectedLogs.length === 0 ? (
+                <div className="cal-side-empty">
+                  <p>No logs on this day</p>
+                  <button className="primary-btn-sm" onClick={onNewLog}>+ Add log</button>
+                </div>
+              ) : (
+                <div className="cal-side-logs">
+                  {selectedLogs.map(log => {
+                    const topic = topicMap[log.topic_id];
+                    const h = Math.floor(log.time_spent / 60);
+                    const m = log.time_spent % 60;
+                    const timeLabel = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                    return (
+                      <div key={log.id} className="cal-log-item">
+                        <div className="cal-log-top">
+                          {topic && <span className="cal-log-topic">{topic.title}</span>}
+                          <div className="cal-log-actions">
+                            <button className="icon-btn edit-btn" onClick={() => onEdit(log)} title="Edit">✎</button>
+                          </div>
+                        </div>
+                        <div className="cal-log-notes">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {log.notes.length > 200 ? log.notes.slice(0, 200) + '...' : log.notes}
+                          </ReactMarkdown>
+                        </div>
+                        <div className="cal-log-footer">
+                          <span className="time-badge">
+                            <span className="time-icon">◷</span> {timeLabel}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Logs() {
-    const [logs, setLogs] = useState([]);
-    const [topics, setTopics] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [modal, setModal] = useState(null);
-    const [topicFilter, setTopicFilter] = useState('all');
-    const [search, setSearch] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(null);
+  const [topicFilter, setTopicFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [view, setView] = useState('list');
+  const [selected, setSelected] = useState(new Set()); // bulk selection
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
-    const fetchData = async () => {
-        try {
-            const [logsRes, topicsRes] = await Promise.all([
-                api.get('/logs/'),
-                api.get('/topics/'),
-            ]);
-            setLogs(logsRes.data);
-            setTopics(topicsRes.data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchData = async () => {
+    try {
+      const [logsRes, topicsRes] = await Promise.all([
+        api.get('/logs/'),
+        api.get('/topics/'),
+      ]);
+      setLogs(logsRes.data);
+      setTopics(topicsRes.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
-    const topicMap = Object.fromEntries(topics.map(t => [t.id, t]));
+  const topicMap = Object.fromEntries(topics.map(t => [t.id, t]));
 
-    const filtered = logs
-        .filter(l => topicFilter === 'all' || l.topic_id === parseInt(topicFilter))
-        .filter(l => l.notes.toLowerCase().includes(search.toLowerCase()));
+  const filtered = logs
+    .filter(l => topicFilter === 'all' || l.topic_id === parseInt(topicFilter))
+    .filter(l => l.notes.toLowerCase().includes(search.toLowerCase()));
 
-    const totalMinutes = filtered.reduce((s, l) => s + l.time_spent, 0);
-    const totalHours = (totalMinutes / 60).toFixed(1);
+  const totalMinutes = filtered.reduce((s, l) => s + l.time_spent, 0);
+  const totalHours = (totalMinutes / 60).toFixed(1);
 
-    if (loading) return (
-        <div className="page-loading">
-            <div className="loading-ring" />
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map(l => l.id)));
+  };
+
+  const bulkDelete = async () => {
+    if (!selected.size) return;
+    setBulkDeleting(true);
+    try {
+      await Promise.all([...selected].map(id => api.delete(`/logs/${id}`)));
+      setLogs(prev => prev.filter(l => !selected.has(l.id)));
+      setSelected(new Set());
+    } catch (e) { console.error(e); }
+    finally { setBulkDeleting(false); }
+  };
+
+  if (loading) return (
+    <div className="page-loading">
+      <div className="loading-ring" />
+    </div>
+  );
+
+  return (
+    <div className="logs-root">
+      {/* Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Logs</h1>
+          <p className="page-sub">{logs.length} entr{logs.length !== 1 ? 'ies' : 'y'} · {totalHours}h total</p>
         </div>
-    );
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div className="view-toggle">
+            <button
+              className={`view-btn ${view === 'list' ? 'active' : ''}`}
+              onClick={() => setView('list')}
+            >☰ List</button>
+            <button
+              className={`view-btn ${view === 'calendar' ? 'active' : ''}`}
+              onClick={() => setView('calendar')}
+            >⊞ Calendar</button>
+          </div>
+          <button className="primary-btn" onClick={() => setModal({})}>
+            <span>+</span> New log
+          </button>
+        </div>
+      </div>
 
-    return (
-        <div className="logs-root">
-            {/* Header */}
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">Logs</h1>
-                    <p className="page-sub">{logs.length} entr{logs.length !== 1 ? 'ies' : 'y'} · {totalHours}h total</p>
-                </div>
-                <button className="primary-btn" onClick={() => setModal({})}>
-                    <span>+</span> New log
-                </button>
+      {/* Filters — only show in list view */}
+      {view === 'list' && (
+        <div className="filter-bar">
+          <select
+            className="topic-select"
+            value={topicFilter}
+            onChange={e => setTopicFilter(e.target.value)}
+          >
+            <option value="all">All topics</option>
+            {topics.map(t => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
+          <input
+            className="search-input"
+            placeholder="Search logs..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+      )}
+
+      {/* Calendar view */}
+      {view === 'calendar' && (
+        <CalendarView
+          logs={logs}
+          topicMap={topicMap}
+          onEdit={setModal}
+          onDelete={fetchData}
+          onNewLog={() => setModal({})}
+        />
+      )}
+
+      {/* List view */}
+      {view === 'list' && (
+        <>
+          {filtered.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">◷</div>
+              <p className="empty-title">{search ? 'No logs found' : 'No logs yet'}</p>
+              <p className="empty-sub">
+                {search ? 'Try a different search' : 'Start logging your daily learning sessions'}
+              </p>
+              {!search && (
+                <button className="primary-btn" onClick={() => setModal({})}>+ New log</button>
+              )}
             </div>
+          ) : (
+            <>
+              {/* Bulk action toolbar */}
+              <div className="bulk-toolbar">
+                <label className="bulk-select-all">
+                  <input
+                    type="checkbox"
+                    checked={selected.size === filtered.length && filtered.length > 0}
+                    onChange={selectAll}
+                  />
+                  <span>{selected.size > 0 ? `${selected.size} selected` : 'Select all'}</span>
+                </label>
+                {selected.size > 0 && (
+                  <div className="bulk-actions">
+                    <span className="bulk-count">{selected.size} of {filtered.length} selected</span>
+                    <button
+                      className="bulk-delete-btn"
+                      onClick={bulkDelete}
+                      disabled={bulkDeleting}
+                    >
+                      {bulkDeleting
+                        ? <span className="bulk-spinner" />
+                        : `🗑 Delete ${selected.size} log${selected.size > 1 ? 's' : ''}`
+                      }
+                    </button>
+                    <button className="bulk-clear-btn" onClick={() => setSelected(new Set())}>
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            {/* Filters */}
-            <div className="filter-bar">
-                <select
-                    className="topic-select"
-                    value={topicFilter}
-                    onChange={e => setTopicFilter(e.target.value)}
-                >
-                    <option value="all">All topics</option>
-                    {topics.map(t => (
-                        <option key={t.id} value={t.id}>{t.title}</option>
-                    ))}
-                </select>
-                <input
-                    className="search-input"
-                    placeholder="Search logs..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                />
-            </div>
+              <div className="logs-list">
+                {filtered.map(log => (
+                  <div key={log.id} className={`log-select-wrap ${selected.has(log.id) ? 'selected' : ''}`}>
+                    <input
+                      type="checkbox"
+                      className="log-checkbox"
+                      checked={selected.has(log.id)}
+                      onChange={() => toggleSelect(log.id)}
+                    />
+                    <div className="log-card-wrap">
+                      <LogCard
+                        log={log}
+                        topicMap={topicMap}
+                        onEdit={setModal}
+                        onDelete={fetchData}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
-            {/* Logs list */}
-            {filtered.length === 0 ? (
-                <div className="empty-state">
-                    <div className="empty-icon">◷</div>
-                    <p className="empty-title">{search ? 'No logs found' : 'No logs yet'}</p>
-                    <p className="empty-sub">
-                        {search ? 'Try a different search' : 'Start logging your daily learning sessions'}
-                    </p>
-                    {!search && (
-                        <button className="primary-btn" onClick={() => setModal({})}>+ New log</button>
-                    )}
-                </div>
-            ) : (
-                <div className="logs-list">
-                    {filtered.map(log => (
-                        <LogCard
-                            key={log.id}
-                            log={log}
-                            topicMap={topicMap}
-                            onEdit={setModal}
-                            onDelete={fetchData}
-                        />
-                    ))}
-                </div>
-            )}
+      {/* Modal */}
+      {modal !== null && (
+        <LogModal
+          log={modal}
+          topics={topics}
+          onClose={() => setModal(null)}
+          onSaved={fetchData}
+        />
+      )}
 
-            {/* Modal */}
-            {modal !== null && (
-                <LogModal
-                    log={modal}
-                    topics={topics}
-                    onClose={() => setModal(null)}
-                    onSaved={fetchData}
-                />
-            )}
-
-            <style>{`
+      <style>{`
         .logs-root {
           padding: 40px 44px;
           width: 100%;
@@ -403,6 +691,7 @@ export default function Logs() {
 
         .logs-list {
           display: flex; flex-direction: column; gap: 14px;
+          margin-top: 4px;
         }
 
         .log-card {
@@ -646,6 +935,141 @@ export default function Logs() {
         .time-icon { font-size: 15px; }
 
         /* Empty state */
+        /* Bulk actions */
+        .bulk-toolbar {
+          display: flex; align-items: center;
+          justify-content: space-between; gap: 12px;
+          padding: 10px 14px;
+          background: var(--card-bg); border: 1px solid var(--border);
+          border-radius: 10px; flex-wrap: wrap;
+        }
+
+        .bulk-select-all {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 13px; font-weight: 500; color: var(--muted);
+          cursor: pointer;
+        }
+
+        .bulk-select-all input {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.bulk-select-all input:checked {
+  background: #f97316;
+  border-color: #f97316;
+}
+
+.bulk-select-all input:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.bulk-select-all input:hover:not(:checked) {
+  border-color: #f97316;
+  background: rgba(249,115,22,0.1);
+}
+  .log-checkbox:focus,
+.bulk-select-all input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(249,115,22,0.3);
+}
+
+        .bulk-actions { display: flex; align-items: center; gap: 10px; }
+
+        .bulk-count {
+          font-size: 12px; font-weight: 600; color: #f97316;
+        }
+
+        .bulk-delete-btn {
+          display: flex; align-items: center; gap: 6px;
+          background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+          border-radius: 8px; padding: 6px 14px;
+          font-size: 13px; font-weight: 600; color: #ef4444;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          transition: all 0.15s;
+        }
+
+        .bulk-delete-btn:hover:not(:disabled) { background: rgba(239,68,68,0.2); }
+        .bulk-delete-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .bulk-clear-btn {
+          background: none; border: 1px solid var(--border);
+          border-radius: 8px; padding: 6px 12px;
+          font-size: 13px; color: var(--muted);
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          transition: all 0.15s;
+        }
+
+        .bulk-clear-btn:hover { border-color: var(--muted); color: var(--text); }
+
+        .bulk-spinner {
+          width: 14px; height: 14px;
+          border: 2px solid rgba(239,68,68,0.3); border-top-color: #ef4444;
+          border-radius: 50%; animation: spin 0.7s linear infinite;
+          display: inline-block;
+        }
+
+        .log-select-wrap {
+          display: flex; align-items: flex-start; gap: 12px;
+        }
+
+        .log-select-wrap.selected .log-card {
+          border-color: rgba(249,115,22,0.4);
+          background: rgba(249,115,22,0.04);
+        }
+
+        .log-checkbox {
+  margin-top: 22px; 
+  cursor: pointer;
+  width: 18px; 
+  height: 18px; 
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.log-checkbox:checked {
+  background: #f97316;
+  border-color: #f97316;
+}
+
+.log-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.log-checkbox:hover:not(:checked) {
+  border-color: #f97316;
+  background: rgba(249,115,22,0.1);
+}
+        .log-card-wrap { flex: 1; min-width: 0; }
+
         .empty-state {
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
@@ -662,6 +1086,277 @@ export default function Logs() {
         }
 
         .empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+
+        /* View toggle */
+        .view-toggle {
+          display: flex; gap: 2px;
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px; padding: 3px;
+        }
+
+        .view-btn {
+          background: none; border: none;
+          border-radius: 7px; padding: 7px 14px;
+          font-size: 13px; font-weight: 500;
+          color: var(--muted); cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: all 0.15s; white-space: nowrap;
+        }
+
+        .view-btn:hover { color: var(--text); }
+
+        .view-btn.active {
+          background: var(--bg);
+          color: var(--text);
+          box-shadow: 0 1px 4px var(--shadow);
+        }
+
+        /* Calendar */
+        .cal-root {
+          width: 100%;
+          animation: fadeIn 0.3s ease;
+        }
+
+        .cal-header {
+          display: flex; align-items: center;
+          gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+
+        .cal-nav-btn {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 8px; padding: 6px 14px;
+          font-size: 18px; color: var(--text);
+          cursor: pointer; transition: all 0.15s;
+          font-family: 'DM Sans', sans-serif;
+          line-height: 1;
+        }
+
+        .cal-nav-btn:hover { border-color: #f97316; color: #f97316; }
+
+        .cal-month-label {
+          display: flex; align-items: baseline; gap: 8px;
+        }
+
+        .cal-month {
+          font-family: 'Syne', sans-serif;
+          font-size: 22px; font-weight: 700;
+          color: var(--text); letter-spacing: -0.5px;
+        }
+
+        .cal-year {
+          font-size: 16px; color: var(--muted); font-weight: 500;
+        }
+
+        .cal-month-stats {
+          display: flex; gap: 16px; margin-left: auto;
+        }
+
+        .cal-stat {
+          font-size: 13px; color: var(--muted);
+        }
+
+        .cal-stat strong { color: var(--text); font-weight: 700; }
+
+        .cal-body {
+          display: grid;
+          grid-template-columns: 1fr 300px;
+          gap: 24px;
+          align-items: start;
+        }
+
+        .cal-grid-wrap {
+          display: flex; flex-direction: column; gap: 8px;
+        }
+
+        .cal-day-headers {
+          display: grid; grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+
+        .cal-day-header {
+          text-align: center;
+          font-size: 11px; font-weight: 700;
+          color: var(--muted); text-transform: uppercase;
+          letter-spacing: 0.5px; padding: 4px 0;
+        }
+
+        .cal-grid {
+          display: grid; grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+
+        .cal-cell {
+          aspect-ratio: 1;
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 6px;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          gap: 3px; cursor: pointer;
+          transition: all 0.15s; position: relative;
+          min-height: 64px;
+        }
+
+        .cal-cell.empty {
+          background: transparent; border-color: transparent;
+          cursor: default; pointer-events: none;
+        }
+
+        .cal-cell:not(.empty):hover {
+          border-color: #f97316;
+          background: var(--hover-bg);
+        }
+
+        .cal-cell.today {
+          border-color: #f97316;
+          background: rgba(249,115,22,0.06);
+        }
+
+        .cal-cell.selected {
+          border-color: #f97316;
+          background: rgba(249,115,22,0.12);
+          box-shadow: 0 0 0 2px rgba(249,115,22,0.25);
+        }
+
+        .cal-day-num {
+          font-size: 13px; font-weight: 600;
+          color: var(--text); line-height: 1;
+        }
+
+        .cal-cell.today .cal-day-num {
+          color: #f97316; font-weight: 800;
+        }
+
+        .cal-intensity {
+          width: 28px; height: 4px; border-radius: 99px;
+        }
+
+        .cal-intensity.i0 { background: transparent; }
+        .cal-intensity.i1 { background: rgba(249,115,22,0.25); }
+        .cal-intensity.i2 { background: rgba(249,115,22,0.45); }
+        .cal-intensity.i3 { background: rgba(249,115,22,0.7); }
+        .cal-intensity.i4 { background: #f97316; }
+
+        .cal-log-count {
+          font-size: 10px; font-weight: 700;
+          color: #f97316; line-height: 1;
+        }
+
+        .cal-hrs {
+          font-size: 10px; color: var(--muted);
+          line-height: 1;
+        }
+
+        .cal-legend {
+          display: flex; align-items: center; gap: 4px;
+          justify-content: flex-end; padding-top: 4px;
+        }
+
+        .cal-legend-label { font-size: 11px; color: var(--placeholder); }
+
+        .cal-legend-dot {
+          width: 12px; height: 12px; border-radius: 3px;
+        }
+
+        .cal-legend-dot.i0 { background: var(--border); }
+        .cal-legend-dot.i1 { background: rgba(249,115,22,0.25); }
+        .cal-legend-dot.i2 { background: rgba(249,115,22,0.45); }
+        .cal-legend-dot.i3 { background: rgba(249,115,22,0.7); }
+        .cal-legend-dot.i4 { background: #f97316; }
+
+        /* Side panel */
+        .cal-side {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 16px; padding: 20px;
+          min-height: 300px;
+          display: flex; flex-direction: column; gap: 16px;
+          position: sticky; top: 20px;
+        }
+
+        .cal-side-empty {
+          flex: 1; display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          gap: 10px; text-align: center;
+          color: var(--muted); font-size: 13px;
+        }
+
+        .cal-side-empty-icon { font-size: 32px; color: var(--border); }
+
+        .cal-side-header {
+          display: flex; align-items: center;
+          justify-content: space-between; gap: 8px;
+        }
+
+        .cal-side-date {
+          font-family: 'Syne', sans-serif;
+          font-size: 15px; font-weight: 700;
+          color: var(--text); margin: 0;
+        }
+
+        .cal-new-btn {
+          background: rgba(249,115,22,0.12);
+          border: 1px solid rgba(249,115,22,0.3);
+          border-radius: 8px; padding: 5px 12px;
+          font-size: 12px; font-weight: 600;
+          color: #f97316; cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: all 0.15s;
+        }
+
+        .cal-new-btn:hover { background: rgba(249,115,22,0.2); }
+
+        .cal-side-logs {
+          display: flex; flex-direction: column; gap: 12px;
+          overflow-y: auto; max-height: 600px;
+        }
+
+        .cal-log-item {
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 10px; padding: 14px;
+          display: flex; flex-direction: column; gap: 8px;
+        }
+
+        .cal-log-top {
+          display: flex; align-items: center;
+          justify-content: space-between; gap: 8px;
+        }
+
+        .cal-log-topic {
+          font-size: 11px; font-weight: 600;
+          background: var(--tag-bg); color: var(--tag-text);
+          padding: 2px 8px; border-radius: 99px;
+          text-transform: uppercase; letter-spacing: 0.3px;
+        }
+
+        .cal-log-actions { display: flex; gap: 4px; }
+
+        .cal-log-notes {
+          font-size: 13px; color: var(--text); line-height: 1.6;
+        }
+
+        .cal-log-notes p { margin: 0 0 4px; }
+        .cal-log-notes p:last-child { margin: 0; }
+
+        .cal-log-footer {
+          padding-top: 6px;
+          border-top: 1px solid var(--border);
+        }
+
+        .primary-btn-sm {
+          background: #f97316; color: white; border: none;
+          border-radius: 8px; padding: 8px 16px;
+          font-size: 13px; font-weight: 600;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer; transition: all 0.2s;
+          box-shadow: 0 3px 10px rgba(249,115,22,0.3);
+        }
+
+        .primary-btn-sm:hover { background: #ea6c0a; transform: translateY(-1px); }
 
         /* Modal */
         .modal-overlay {
@@ -765,6 +1460,6 @@ export default function Logs() {
           display: inline-block;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

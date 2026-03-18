@@ -1,0 +1,1105 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import api from '../api/axios';
+import ConfirmDialog from '../components/ConfirmDialog';
+
+// ─── Shared styles injected once at the top level ───────────────────────────
+const STYLES = `
+  .roadmaps-root, .detail-root {
+    padding: 40px 44px;
+    width: 100%;
+    box-sizing: border-box;
+    animation: rm-fadeIn 0.4s ease forwards;
+  }
+  .detail-root { max-width: 100%; }
+
+  @keyframes rm-fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .rm-loading {
+    display: flex; align-items: center;
+    justify-content: center; height: 100vh;
+  }
+
+  .rm-ring {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: #f97316;
+    border-radius: 50%;
+    animation: rm-spin 0.8s linear infinite;
+  }
+
+  @keyframes rm-spin { to { transform: rotate(360deg); } }
+
+  .rm-page-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px; gap: 16px; flex-wrap: wrap;
+  }
+
+  .rm-page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.5px;
+    margin: 0 0 4px;
+  }
+
+  .rm-page-sub { font-size: 14px; color: var(--muted); margin: 0; }
+
+  .rm-primary-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: #f97316; color: white; border: none;
+    border-radius: 10px; padding: 11px 20px;
+    font-size: 14px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(249,115,22,0.3);
+    white-space: nowrap;
+  }
+  .rm-primary-btn:hover { background: #ea6c0a; transform: translateY(-1px); }
+
+  /* Grid */
+  .rm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  /* Card */
+  .rm-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px;
+    cursor: pointer;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+  }
+  .rm-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px var(--shadow);
+    border-color: rgba(249,115,22,0.3);
+  }
+
+  .rm-card-top {
+    display: flex; align-items: center;
+    justify-content: space-between;
+  }
+
+  .rm-card-icon {
+    font-size: 22px; color: #f97316; font-weight: 700;
+  }
+
+  .rm-card-actions {
+    display: flex; gap: 4px;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .rm-card:hover .rm-card-actions { opacity: 1; }
+
+  .rm-card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px; font-weight: 700;
+    color: var(--text); margin: 0; letter-spacing: -0.3px;
+  }
+
+  .rm-card-desc {
+    font-size: 13px; color: var(--muted);
+    line-height: 1.5; margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .rm-card-footer {
+    display: flex; gap: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .rm-card-meta { font-size: 12px; color: var(--muted); }
+
+  /* Progress bar */
+  .rm-progress-wrap { display: flex; flex-direction: column; gap: 5px; }
+
+  .rm-progress-track {
+    height: 5px; border-radius: 99px;
+    background: var(--border); overflow: hidden;
+  }
+
+  .rm-progress-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .rm-progress-label { font-size: 11px; font-weight: 600; }
+
+  /* Detail view */
+  .rm-back-btn {
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 14px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    padding: 0; margin-bottom: 20px;
+    transition: color 0.15s; display: block;
+  }
+  .rm-back-btn:hover { color: #f97316; }
+
+  .rm-detail-header {
+    margin-bottom: 32px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .rm-detail-title-row {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 12px;
+  }
+
+  .rm-detail-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.5px; margin: 0 0 4px;
+  }
+
+  .rm-detail-desc {
+    font-size: 14px; color: var(--muted);
+    line-height: 1.5; margin: 0;
+  }
+
+  .rm-big-progress { display: flex; flex-direction: column; gap: 6px; }
+
+  .rm-big-track {
+    height: 8px; border-radius: 99px;
+    background: var(--border); overflow: hidden;
+  }
+
+  .rm-big-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .rm-big-meta {
+    display: flex; justify-content: space-between;
+    font-size: 12px; font-weight: 500;
+  }
+
+  /* Steps */
+  .rm-steps-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .rm-steps-empty {
+    text-align: center; padding: 40px;
+    color: var(--muted); font-size: 14px;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+  }
+
+  .rm-step {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+    transition: all 0.2s;
+  }
+  .rm-step:hover { box-shadow: 0 2px 12px var(--shadow); }
+  .rm-step.done { opacity: 0.6; }
+
+  .rm-step-left {
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0; padding-top: 2px;
+  }
+
+  .rm-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--border);
+    background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: white;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .rm-check.checked {
+    background: #22c55e; border-color: #22c55e;
+    animation: rmCheckPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes rmCheckPop {
+    0%   { transform: scale(0.8); }
+    50%  { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .rm-check:hover:not(.checked) {
+    border-color: #22c55e;
+    background: rgba(34,197,94,0.1);
+  }
+
+  .rm-step-num {
+    font-size: 12px; font-weight: 700;
+    color: var(--placeholder);
+    min-width: 16px; text-align: center;
+  }
+
+  .rm-step-body { flex: 1; min-width: 0; }
+
+  .rm-step-title-row {
+    display: flex; align-items: center;
+    gap: 8px; flex-wrap: wrap; margin-bottom: 3px;
+  }
+
+  .rm-step-title {
+    font-size: 15px; font-weight: 600; color: var(--text);
+  }
+  .rm-step.done .rm-step-title {
+    text-decoration: line-through; color: var(--muted);
+  }
+
+  .rm-step-topic {
+    font-size: 11px; font-weight: 600;
+    background: var(--tag-bg); color: var(--tag-text);
+    padding: 2px 8px; border-radius: 99px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+
+  .rm-step-desc {
+    font-size: 13px; color: var(--muted);
+    line-height: 1.5; margin: 0;
+  }
+
+  .rm-step-actions {
+    display: flex; gap: 4px;
+    opacity: 0; transition: opacity 0.2s;
+    flex-shrink: 0;
+  }
+  .rm-step:hover .rm-step-actions { opacity: 1; }
+
+  .rm-add-step-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: none;
+    border: 2px dashed var(--border);
+    border-radius: 12px; padding: 14px 20px;
+    font-size: 14px; font-weight: 500;
+    color: var(--muted); cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s; width: 100%;
+    justify-content: center; margin-top: 4px;
+  }
+  .rm-add-step-btn:hover {
+    border-color: #f97316; color: #f97316;
+    background: rgba(249,115,22,0.04);
+  }
+
+  /* Two-column layout */
+  .rm-detail-header-wrap { margin-bottom: 28px; }
+
+  .rm-detail-title-row {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+
+  .rm-detail-title-left { flex: 1; min-width: 0; }
+
+  .rm-detail-title-actions {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+
+  .rm-header-progress { display: flex; align-items: center; gap: 8px; }
+
+  .rm-header-track {
+    width: 120px; height: 6px; border-radius: 99px;
+    background: var(--border); overflow: hidden;
+  }
+
+  .rm-header-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .rm-panel-toggle {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px;
+    font-size: 16px; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+
+  .rm-panel-toggle:hover { border-color: #f97316; color: #f97316; }
+  .rm-panel-toggle.active { color: #f97316; border-color: rgba(249,115,22,0.3); }
+
+  .rm-two-col {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 28px; align-items: start;
+  }
+
+  .rm-two-col.panel-hidden { grid-template-columns: 1fr; }
+
+  .rm-col-steps { display: flex; flex-direction: column; }
+
+  .rm-col-summary { display: flex; flex-direction: column; gap: 16px; }
+
+  .rm-summary-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 20px;
+  }
+
+  .rm-ring-wrap {
+    position: relative;
+    width: 120px; height: 120px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .rm-ring-wrap svg { position: absolute; top: 0; left: 0; }
+
+  .rm-ring-label {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+  }
+
+  .rm-ring-pct {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px; font-weight: 800;
+    letter-spacing: -1px; line-height: 1;
+  }
+
+  .rm-ring-sub {
+    font-size: 11px; color: var(--muted);
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .rm-summary-stats {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 10px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+
+  .rm-stat-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .rm-stat-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .rm-stat-label {
+    font-size: 13px; color: var(--muted); flex: 1;
+  }
+
+  .rm-stat-val {
+    font-size: 14px; font-weight: 700;
+    font-family: 'Syne', sans-serif;
+  }
+
+  /* Topics linked card */
+  .rm-topics-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .rm-topics-card-title, .rm-summary-card-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.5px; margin: 0;
+  }
+
+  .rm-linked-topics { display: flex; flex-direction: column; gap: 8px; }
+
+  .rm-linked-topic {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 8px;
+    font-size: 13px; color: var(--text);
+  }
+
+  .rm-linked-topic-name { flex: 1; }
+
+  .rm-linked-topic-count {
+    font-size: 12px; font-weight: 600;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 2px 8px; border-radius: 99px;
+    border: 1px solid var(--border);
+  }
+
+  .rm-linked-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #f97316; flex-shrink: 0;
+  }
+
+  .rm-no-topics { font-size: 13px; color: var(--placeholder); }
+
+  .rm-summary-meta { gap: 12px !important; }
+
+  .rm-meta-row {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 8px;
+  }
+
+  .rm-meta-label { font-size: 12px; color: var(--muted); }
+
+  .rm-meta-val {
+    font-size: 12px; font-weight: 600;
+    color: var(--text); text-align: right;
+  }
+
+  .rm-info-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .rm-info-val {
+    font-size: 13px; color: var(--text); font-weight: 500;
+  }
+
+  /* Empty state */
+  .rm-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 80px 20px; gap: 12px; text-align: center;
+  }
+  .rm-empty-icon { font-size: 48px; color: var(--border); margin-bottom: 8px; }
+  .rm-empty-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 700; color: var(--text);
+  }
+  .rm-empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+
+  /* Shared icon buttons */
+  .rm-icon-btn {
+    background: none; border: none;
+    border-radius: 6px; padding: 4px 7px;
+    font-size: 13px; cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .rm-icon-btn.edit:hover { background: var(--hover-bg); color: #f97316; }
+  .rm-icon-btn.del:hover  { background: var(--danger-bg); color: var(--danger-text); }
+  .rm-icon-btn { color: var(--muted); }
+
+  /* Modal */
+  .rm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center;
+    justify-content: center; z-index: 1000;
+  }
+
+  .rm-modal {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px;
+    width: 100%; max-width: 460px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+    animation: rm-slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes rm-slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .rm-modal-header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 24px;
+  }
+
+  .rm-modal-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 700; color: var(--text);
+  }
+
+  .rm-modal-close {
+    background: none; border: none; color: var(--muted);
+    font-size: 16px; cursor: pointer; padding: 4px 8px;
+    border-radius: 6px; transition: all 0.2s;
+  }
+  .rm-modal-close:hover { background: var(--hover-bg); color: var(--text); }
+
+  .rm-modal-form { display: flex; flex-direction: column; gap: 18px; }
+
+  .rm-field { display: flex; flex-direction: column; gap: 7px; }
+
+  .rm-field label { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+  .rm-optional { font-weight: 400; color: var(--placeholder); }
+
+  .rm-field input, .rm-field select, .rm-field textarea {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 11px 14px;
+    font-size: 14px; color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    outline: none; resize: vertical;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .rm-field input:focus, .rm-field select:focus, .rm-field textarea:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+  }
+  .rm-field select option { background: var(--card-bg); }
+
+  .rm-checkbox-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--text);
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  .rm-checkbox-label input { cursor: pointer; width: 16px; height: 16px; }
+
+  .rm-form-error {
+    font-size: 13px; color: var(--danger-text);
+    background: var(--danger-bg);
+    border-radius: 8px; padding: 10px 14px;
+  }
+
+  .rm-submit-btn {
+    background: #f97316; color: white; border: none;
+    border-radius: 10px; padding: 12px;
+    font-size: 14px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center;
+    justify-content: center; min-height: 44px;
+    box-shadow: 0 4px 16px rgba(249,115,22,0.3);
+  }
+  .rm-submit-btn:hover:not(:disabled) { background: #ea6c0a; transform: translateY(-1px); }
+  .rm-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+  .rm-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: rm-spin 0.7s linear infinite;
+    display: inline-block;
+  }
+`;
+
+function StyleInjector() {
+    useEffect(() => {
+        const id = 'roadmaps-styles';
+        if (!document.getElementById(id)) {
+            const tag = document.createElement('style');
+            tag.id = id;
+            tag.textContent = STYLES;
+            document.head.appendChild(tag);
+        }
+        return () => {
+            const tag = document.getElementById(id);
+            if (tag) tag.remove();
+        };
+    }, []);
+    return null;
+}
+
+// ─── Modals ──────────────────────────────────────────────────────────────────
+
+function RoadmapModal({ roadmap, onClose, onSaved }) {
+    const editing = !!roadmap?.id;
+    const [form, setForm] = useState({ title: roadmap?.title || '', description: roadmap?.description || '' });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+    const submit = async e => {
+        e.preventDefault(); setLoading(true); setError('');
+        try {
+            if (editing) await api.put(`/roadmaps/${roadmap.id}`, form);
+            else await api.post('/roadmaps/', form);
+            onSaved(); onClose();
+        } catch (err) {
+            const d = err.response?.data?.detail;
+            setError(typeof d === 'string' ? d : 'Something went wrong');
+        } finally { setLoading(false); }
+    };
+
+    return createPortal(
+        <div className="rm-overlay" onClick={onClose}>
+            <div className="rm-modal" onClick={e => e.stopPropagation()}>
+                <div className="rm-modal-header">
+                    <h2>{editing ? 'Edit roadmap' : 'New roadmap'}</h2>
+                    <button className="rm-modal-close" onClick={onClose}>✕</button>
+                </div>
+                <form onSubmit={submit} className="rm-modal-form">
+                    <div className="rm-field">
+                        <label>Title</label>
+                        <input name="title" value={form.title} onChange={handle}
+                            placeholder="e.g. Become a DevOps Engineer" required autoFocus />
+                    </div>
+                    <div className="rm-field">
+                        <label>Description</label>
+                        <textarea name="description" value={form.description} onChange={handle}
+                            placeholder="What's this roadmap about?" rows={3} />
+                    </div>
+                    {error && <p className="rm-form-error">{error}</p>}
+                    <button type="submit" className="rm-submit-btn" disabled={loading}>
+                        {loading ? <span className="rm-spinner" /> : (editing ? 'Save changes' : 'Create roadmap')}
+                    </button>
+                </form>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+function StepModal({ step, roadmapId, topics, nextOrder, onClose, onSaved }) {
+    const editing = !!step?.id;
+    const [form, setForm] = useState({
+        title: step?.title || '',
+        description: step?.description || '',
+        topic_id: step?.topic_id || '',
+        order: step?.order ?? nextOrder,
+        is_completed: step?.is_completed || false,
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handle = e => {
+        const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        setForm(f => ({ ...f, [e.target.name]: val }));
+    };
+
+    const submit = async e => {
+        e.preventDefault(); setLoading(true); setError('');
+        try {
+            const payload = { ...form, topic_id: form.topic_id ? parseInt(form.topic_id) : null, order: parseInt(form.order) };
+            if (editing) await api.put(`/roadmaps/${roadmapId}/steps/${step.id}`, payload);
+            else await api.post(`/roadmaps/${roadmapId}/steps`, payload);
+            onSaved(); onClose();
+        } catch (err) {
+            const d = err.response?.data?.detail;
+            setError(typeof d === 'string' ? d : 'Something went wrong');
+        } finally { setLoading(false); }
+    };
+
+    return createPortal(
+        <div className="rm-overlay" onClick={onClose}>
+            <div className="rm-modal" onClick={e => e.stopPropagation()}>
+                <div className="rm-modal-header">
+                    <h2>{editing ? 'Edit step' : 'Add step'}</h2>
+                    <button className="rm-modal-close" onClick={onClose}>✕</button>
+                </div>
+                <form onSubmit={submit} className="rm-modal-form">
+                    <div className="rm-field">
+                        <label>Step title</label>
+                        <input name="title" value={form.title} onChange={handle}
+                            placeholder="e.g. Learn Docker basics" required autoFocus />
+                    </div>
+                    <div className="rm-field">
+                        <label>Description <span className="rm-optional">(optional)</span></label>
+                        <textarea name="description" value={form.description} onChange={handle}
+                            placeholder="What does this step cover?" rows={2} />
+                    </div>
+                    <div className="rm-field">
+                        <label>Link to topic <span className="rm-optional">(optional)</span></label>
+                        <select name="topic_id" value={form.topic_id} onChange={handle}>
+                            <option value="">No topic linked</option>
+                            {topics.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                        </select>
+                    </div>
+                    {editing && (
+                        <label className="rm-checkbox-label">
+                            <input type="checkbox" name="is_completed" checked={form.is_completed} onChange={handle} />
+                            Mark as completed
+                        </label>
+                    )}
+                    {error && <p className="rm-form-error">{error}</p>}
+                    <button type="submit" className="rm-submit-btn" disabled={loading}>
+                        {loading ? <span className="rm-spinner" /> : (editing ? 'Save changes' : 'Add step')}
+                    </button>
+                </form>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+// ─── Detail view ─────────────────────────────────────────────────────────────
+
+function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
+    const [steps, setSteps] = useState(roadmap.steps || []);
+    const [stepModal, setStepModal] = useState(null);
+    const [confirm, setConfirm] = useState(null);
+    const [editModal, setEditModal] = useState(false);
+
+    const refresh = useCallback(async () => {
+        const res = await api.get(`/roadmaps/${roadmap.id}`);
+        setSteps(res.data.steps);
+        onUpdated(res.data);
+    }, [roadmap.id, onUpdated]);
+
+    const toggleStep = async (step) => {
+        try {
+            await api.put(`/roadmaps/${roadmap.id}/steps/${step.id}`, { is_completed: !step.is_completed });
+            refresh();
+        } catch (e) { console.error(e); }
+    };
+
+    const deleteStep = async (stepId) => {
+        try {
+            await api.delete(`/roadmaps/${roadmap.id}/steps/${stepId}`);
+            refresh();
+        } catch (e) { console.error(e); }
+    };
+
+    const done = steps.filter(s => s.is_completed).length;
+    const total = steps.length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const color = pct === 100 ? '#22c55e' : pct >= 60 ? '#f97316' : '#3b82f6';
+    const [panelOpen, setPanelOpen] = useState(true);
+
+    return (
+        <div className="detail-root">
+            {/* Back + header */}
+            <div className="rm-detail-header-wrap">
+                <button className="rm-back-btn" onClick={onBack}>← Back to roadmaps</button>
+                <div className="rm-detail-title-row">
+                    <div className="rm-detail-title-left">
+                        <h1 className="rm-detail-title">{roadmap.title}</h1>
+                        {roadmap.description && <p className="rm-detail-desc">{roadmap.description}</p>}
+                    </div>
+                    <div className="rm-detail-title-actions">
+                        {total > 0 && (
+                            <div className="rm-header-progress">
+                                <div className="rm-header-track">
+                                    <div className="rm-header-fill" style={{ width: `${pct}%`, background: color }} />
+                                </div>
+                                <span style={{ color, fontSize: 12, fontWeight: 700 }}>{pct}%</span>
+                                <span style={{ color: 'var(--muted)', fontSize: 12 }}>{done}/{total}</span>
+                            </div>
+                        )}
+                        <button className="rm-icon-btn edit" onClick={() => setEditModal(true)} title="Edit roadmap">✎</button>
+                        <button
+                            className={`rm-panel-toggle ${panelOpen ? 'active' : ''}`}
+                            onClick={() => setPanelOpen(o => !o)}
+                            title={panelOpen ? 'Hide panel' : 'Show panel'}
+                        >
+                            {panelOpen ? '⊟' : '⊞'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Two-column layout */}
+            <div className={`rm-two-col ${panelOpen ? '' : 'panel-hidden'}`}>
+
+                {/* Left — steps */}
+                <div className="rm-col-steps">
+                    <div className="rm-steps-list">
+                        {steps.length === 0 ? (
+                            <div className="rm-steps-empty">
+                                <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>⟶</div>
+                                <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px' }}>No steps yet</p>
+                                <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>Break your roadmap into actionable steps</p>
+                                <button className="rm-primary-btn" onClick={() => setStepModal({})}>+ Add first step</button>
+                            </div>
+                        ) : (
+                            steps.map((step, i) => {
+                                const linked = topics.find(t => t.id === step.topic_id);
+                                return (
+                                    <div key={step.id} className={`rm-step ${step.is_completed ? 'done' : ''}`}>
+                                        <div className="rm-step-left">
+                                            <button
+                                                className={`rm-check ${step.is_completed ? 'checked' : ''}`}
+                                                onClick={() => toggleStep(step)}
+                                                type="button"
+                                            >
+                                                {step.is_completed ? '✓' : ''}
+                                            </button>
+                                            <div className="rm-step-num">{i + 1}</div>
+                                        </div>
+                                        <div className="rm-step-body">
+                                            <div className="rm-step-title-row">
+                                                <span className="rm-step-title">{step.title}</span>
+                                                {linked && <span className="rm-step-topic">{linked.title}</span>}
+                                            </div>
+                                            {step.description && <p className="rm-step-desc">{step.description}</p>}
+                                        </div>
+                                        <div className="rm-step-actions">
+                                            <button className="rm-icon-btn edit" onClick={() => setStepModal(step)} title="Edit">✎</button>
+                                            <button className="rm-icon-btn del" onClick={() => setConfirm(step.id)} title="Delete">✕</button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                        {steps.length > 0 && (
+                            <button className="rm-add-step-btn" onClick={() => setStepModal({})}>
+                                + Add step
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Right — summary panel */}
+                {panelOpen && (
+                    <div className="rm-col-summary">
+
+                        {/* Completion ring */}
+                        <div className="rm-summary-card">
+                            <div className="rm-ring-wrap">
+                                <svg width="120" height="120" viewBox="0 0 120 120">
+                                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" strokeWidth="8" />
+                                    <circle
+                                        cx="60" cy="60" r="50"
+                                        fill="none"
+                                        stroke={color}
+                                        strokeWidth="8"
+                                        strokeLinecap="round"
+                                        strokeDasharray={`${2 * Math.PI * 50}`}
+                                        strokeDashoffset={`${2 * Math.PI * 50 * (1 - pct / 100)}`}
+                                        transform="rotate(-90 60 60)"
+                                        style={{ transition: 'stroke-dashoffset 0.6s cubic-bezier(0.16,1,0.3,1), stroke 0.3s' }}
+                                    />
+                                </svg>
+                                <div className="rm-ring-label">
+                                    <span className="rm-ring-pct" style={{ color }}>{pct}%</span>
+                                    <span className="rm-ring-sub">{total > 0 ? `${done}/${total}` : 'complete'}</span>
+                                </div>
+                            </div>
+
+                            <div className="rm-summary-stats">
+                                <div className="rm-stat-row">
+                                    <span className="rm-stat-dot" style={{ background: '#22c55e' }} />
+                                    <span className="rm-stat-label">Completed</span>
+                                    <span className="rm-stat-val" style={{ color: '#22c55e' }}>{done}</span>
+                                </div>
+                                <div className="rm-stat-row">
+                                    <span className="rm-stat-dot" style={{ background: '#3b82f6' }} />
+                                    <span className="rm-stat-label">Remaining</span>
+                                    <span className="rm-stat-val" style={{ color: '#3b82f6' }}>{total - done}</span>
+                                </div>
+                                <div className="rm-stat-row">
+                                    <span className="rm-stat-dot" style={{ background: 'var(--muted)' }} />
+                                    <span className="rm-stat-label">Total steps</span>
+                                    <span className="rm-stat-val">{total}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Linked topics */}
+                        {topics.filter(t => steps.some(s => s.topic_id === t.id)).length > 0 && (
+                            <div className="rm-summary-card">
+                                <h3 className="rm-summary-card-title">Linked topics</h3>
+                                <div className="rm-linked-topics">
+                                    {topics
+                                        .filter(t => steps.some(s => s.topic_id === t.id))
+                                        .map(t => {
+                                            const stepsDone = steps.filter(s => s.topic_id === t.id && s.is_completed).length;
+                                            const stepsTotal = steps.filter(s => s.topic_id === t.id).length;
+                                            return (
+                                                <div key={t.id} className="rm-linked-topic">
+                                                    <span className="rm-linked-topic-name">{t.title}</span>
+                                                    <span className="rm-linked-topic-count">{stepsDone}/{stepsTotal}</span>
+                                                </div>
+                                            );
+                                        })
+                                    }
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Meta */}
+                        <div className="rm-summary-card rm-summary-meta">
+                            <div className="rm-meta-row">
+                                <span className="rm-meta-label">Created</span>
+                                <span className="rm-meta-val">
+                                    {new Date(roadmap.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                            </div>
+                            <div className="rm-meta-row">
+                                <span className="rm-meta-label">Last updated</span>
+                                <span className="rm-meta-val">
+                                    {new Date(roadmap.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+                )}
+            </div>
+
+            {stepModal !== null && (
+                <StepModal
+                    step={stepModal?.id ? stepModal : null}
+                    roadmapId={roadmap.id}
+                    topics={topics}
+                    nextOrder={steps.length}
+                    onClose={() => setStepModal(null)}
+                    onSaved={refresh}
+                />
+            )}
+
+            {editModal && (
+                <RoadmapModal
+                    roadmap={roadmap}
+                    onClose={() => setEditModal(false)}
+                    onSaved={refresh}
+                />
+            )}
+
+            {confirm !== null && (
+                <ConfirmDialog
+                    title="Delete step"
+                    message="Delete this step? This cannot be undone."
+                    onConfirm={() => { deleteStep(confirm); setConfirm(null); }}
+                    onCancel={() => setConfirm(null)}
+                />
+            )}
+        </div>
+    );
+}
+
+// ─── Card ────────────────────────────────────────────────────────────────────
+
+function RoadmapCard({ roadmap, onClick, onDelete }) {
+    const [confirm, setConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        setDeleting(true);
+        try { await api.delete(`/roadmaps/${roadmap.id}`); onDelete(); }
+        catch (e) { console.error(e); }
+        finally { setDeleting(false); setConfirm(false); }
+    };
+
+    const done = roadmap.steps.filter(s => s.is_completed).length;
+    const total = roadmap.steps.length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const color = pct === 100 ? '#22c55e' : pct >= 60 ? '#f97316' : '#3b82f6';
+
+    return (
+        <div className="rm-card" onClick={onClick}>
+            <div className="rm-card-top">
+                <span className="rm-card-icon">⟶</span>
+                <div className="rm-card-actions" onClick={e => e.stopPropagation()}>
+                    <button className="rm-icon-btn del" onClick={() => setConfirm(true)} disabled={deleting} title="Delete">
+                        {deleting ? '...' : '✕'}
+                    </button>
+                </div>
+            </div>
+
+            <h3 className="rm-card-title">{roadmap.title}</h3>
+            {roadmap.description && <p className="rm-card-desc">{roadmap.description}</p>}
+
+            {total > 0 && (
+                <div className="rm-progress-wrap">
+                    <div className="rm-progress-track">
+                        <div className="rm-progress-fill" style={{ width: `${pct}%`, background: color }} />
+                    </div>
+                    <span className="rm-progress-label" style={{ color }}>
+                        {done}/{total} steps · {pct}%
+                    </span>
+                </div>
+            )}
+
+            <div className="rm-card-footer">
+                <span className="rm-card-meta">{total} step{total !== 1 ? 's' : ''}</span>
+                {total > 0 && <span className="rm-card-meta">{done} completed</span>}
+            </div>
+
+            {confirm && (
+                <ConfirmDialog
+                    title="Delete roadmap"
+                    message={`Delete "${roadmap.title}" and all its steps?`}
+                    onConfirm={handleDelete}
+                    onCancel={() => setConfirm(false)}
+                />
+            )}
+        </div>
+    );
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
+
+export default function Roadmaps() {
+    const [roadmaps, setRoadmaps] = useState([]);
+    const [topics, setTopics] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [modal, setModal] = useState(null);
+    const [selected, setSelected] = useState(null);
+
+    const fetchData = useCallback(async () => {
+        try {
+            const [rmRes, tRes] = await Promise.all([api.get('/roadmaps/'), api.get('/topics/')]);
+            setRoadmaps(rmRes.data);
+            setTopics(tRes.data);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    }, []);
+
+    useEffect(() => { fetchData(); }, [fetchData]);
+
+    const handleUpdated = useCallback((updated) => {
+        setRoadmaps(prev => prev.map(r => r.id === updated.id ? updated : r));
+        setSelected(updated);
+    }, []);
+
+    if (loading) return (
+        <>
+            <StyleInjector />
+            <div className="rm-loading"><div className="rm-ring" /></div>
+        </>
+    );
+
+    if (selected) return (
+        <>
+            <StyleInjector />
+            <RoadmapDetail
+                roadmap={selected}
+                topics={topics}
+                onBack={() => { setSelected(null); fetchData(); }}
+                onUpdated={handleUpdated}
+            />
+        </>
+    );
+
+    return (
+        <>
+            <StyleInjector />
+            <div className="roadmaps-root">
+                <div className="rm-page-header">
+                    <div>
+                        <h1 className="rm-page-title">Roadmaps</h1>
+                        <p className="rm-page-sub">{roadmaps.length} roadmap{roadmaps.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <button className="rm-primary-btn" onClick={() => setModal({})}>
+                        <span>+</span> New roadmap
+                    </button>
+                </div>
+
+                {roadmaps.length === 0 ? (
+                    <div className="rm-empty">
+                        <div className="rm-empty-icon">⟶</div>
+                        <p className="rm-empty-title">No roadmaps yet</p>
+                        <p className="rm-empty-sub">Create a learning path and track your progress step by step</p>
+                        <button className="rm-primary-btn" onClick={() => setModal({})}>+ New roadmap</button>
+                    </div>
+                ) : (
+                    <div className="rm-grid">
+                        {roadmaps.map(r => (
+                            <RoadmapCard
+                                key={r.id}
+                                roadmap={r}
+                                onClick={() => setSelected(r)}
+                                onDelete={fetchData}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {modal !== null && (
+                    <RoadmapModal
+                        roadmap={null}
+                        onClose={() => setModal(null)}
+                        onSaved={fetchData}
+                    />
+                )}
+            </div>
+        </>
+    );
+}

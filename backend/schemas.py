@@ -95,25 +95,34 @@ class LogResponse(BaseModel):
 # ─────────────────────────────────────────
 
 class ResourceCreate(BaseModel):
-    title: str
-    url: str
+    title:         str
+    url:           str
     resource_type: Optional[str] = None
-    topic_id: Optional[int] = None
+    topic_id:      Optional[int] = None
+    rating:        Optional[int] = None
+    is_read:       bool = False
+    notes:         Optional[str] = None
 
 class ResourceUpdate(BaseModel):
-    title: Optional[str] = None
-    url: Optional[str] = None
+    title:         Optional[str] = None
+    url:           Optional[str] = None
     resource_type: Optional[str] = None
-    topic_id: Optional[int] = None
+    topic_id:      Optional[int] = None
+    rating:        Optional[int] = None
+    is_read:       Optional[bool] = None
+    notes:         Optional[str] = None
 
 class ResourceResponse(BaseModel):
-    id: int
-    title: str
-    url: str
+    id:            int
+    title:         str
+    url:           str
     resource_type: Optional[str]
-    topic_id: Optional[int]
-    owner_id: int
-    created_at: datetime
+    topic_id:      Optional[int]
+    owner_id:      int
+    rating:        Optional[int]
+    is_read:       bool
+    notes:         Optional[str]
+    created_at:    datetime
 
     model_config = {"from_attributes": True}
 
@@ -180,3 +189,253 @@ class PublicProfileResponse(BaseModel):
     topics_in_progress: int
     topics: List[PublicTopicResponse]
     member_since: datetime
+
+
+# ─────────────────────────────────────────
+# Note schemas
+# ─────────────────────────────────────────
+
+class NoteCreate(BaseModel):
+    title: str
+    content: Optional[str] = None
+    tags: Optional[str] = None
+    is_pinned: bool = False
+    folder_id: Optional[int] = None
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    tags: Optional[str] = None
+    is_pinned: Optional[bool] = None
+    folder_id: Optional[int] = None
+
+class NoteResponse(BaseModel):
+    id: int
+    title: str
+    content: Optional[str]
+    tags: Optional[str]
+    is_pinned: bool
+    folder_id: Optional[int]
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────
+# Roadmap schemas
+# ─────────────────────────────────────────
+
+class RoadmapStepCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    order: int = 0
+    is_completed: bool = False
+    topic_id: Optional[int] = None
+
+class RoadmapStepUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    order: Optional[int] = None
+    is_completed: Optional[bool] = None
+    topic_id: Optional[int] = None
+
+class RoadmapStepResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    order: int
+    is_completed: bool
+    topic_id: Optional[int]
+    roadmap_id: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class RoadmapCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+class RoadmapUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+class RoadmapResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
+    steps: List[RoadmapStepResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────
+# Topic detail schema
+# ─────────────────────────────────────────
+
+class LinkedStepResponse(BaseModel):
+    id:            int
+    title:         str
+    is_completed:  bool
+    roadmap_title: str
+
+class TopicDetailResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    difficulty: DifficultyEnum
+    status: StatusEnum
+    goal_hours: Optional[float]
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    # Aggregated
+    total_minutes: int
+    total_logs: int
+    logs:         List[LogResponse]         = []
+    resources:    List[ResourceResponse]    = []
+    linked_steps: List[LinkedStepResponse]  = []
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────
+# Assistant schemas
+# ─────────────────────────────────────────
+
+class AssistantMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+class AssistantRequest(BaseModel):
+    messages: List[AssistantMessage]
+
+class AssistantResponse(BaseModel):
+    reply: str
+
+
+# ─────────────────────────────────────────
+# Folder schemas
+# ─────────────────────────────────────────
+
+class FolderCreate(BaseModel):
+    title: str
+
+class FolderUpdate(BaseModel):
+    title: Optional[str] = None
+
+class FolderResponse(BaseModel):
+    id: int
+    title: str
+    owner_id: int
+    created_at: datetime
+    note_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────
+# Chat history schemas
+# ─────────────────────────────────────────
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    role: str
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────
+# Conversation schemas
+# ─────────────────────────────────────────
+
+class ConversationCreate(BaseModel):
+    title: str = "New chat"
+
+class ConversationUpdate(BaseModel):
+    title: str
+
+class ConversationResponse(BaseModel):
+    id: int
+    title: str
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class ConversationWithMessages(BaseModel):
+    id: int
+    title: str
+    messages: List[ChatMessageResponse] = []
+
+    model_config = {"from_attributes": True}
+
+class ChatRequest(BaseModel):
+    conversation_id: int
+    message: str
+
+
+# ─────────────────────────────────────────
+# Goal schemas
+# ─────────────────────────────────────────
+
+class GoalCreate(BaseModel):
+    title:        str
+    description:  Optional[str]  = None
+    target_hours: Optional[float] = None
+    target_date:  Optional[datetime] = None
+    topic_id:     Optional[int]  = None
+
+class GoalUpdate(BaseModel):
+    title:        Optional[str]   = None
+    description:  Optional[str]   = None
+    target_hours: Optional[float] = None
+    target_date:  Optional[datetime] = None
+    topic_id:     Optional[int]   = None
+    is_completed: Optional[bool]  = None
+
+class GoalResponse(BaseModel):
+    id:           int
+    title:        str
+    description:  Optional[str]
+    target_hours: Optional[float]
+    target_date:  Optional[datetime]
+    topic_id:     Optional[int]
+    topic_title:  Optional[str] = None
+    is_completed: bool
+    owner_id:     int
+    created_at:   datetime
+    updated_at:   datetime
+    logged_hours: float = 0.0
+
+    model_config = {"from_attributes": True}
+
+
+# ─────────────────────────────────────────
+# Password change schema
+# ─────────────────────────────────────────
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password:     str
+
+class ProfileStats(BaseModel):
+    total_hours:       float
+    total_sessions:    int
+    topics_total:      int
+    topics_mastered:   int
+    topics_learning:   int
+    active_days:       int
+    goals_active:      int
+    goals_completed:   int
+    notes_count:       int
+    roadmaps_count:    int
+    member_since:      datetime

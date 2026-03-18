@@ -61,4 +61,18 @@ def search(
             subtitle=r.resource_type or "resource",
         ))
 
+    # Search notes
+    notes = db.query(models.Note).filter(
+        models.Note.owner_id == current_user.id,
+        (models.Note.title.ilike(q_lower) | models.Note.content.ilike(q_lower))
+    ).limit(5).all()
+
+    for n in notes:
+        results.append(schemas.SearchResult(
+            type="note",
+            id=n.id,
+            title=n.title,
+            subtitle=n.tags or "note",
+        ))
+
     return schemas.SearchResponse(results=results, total=len(results))
