@@ -164,7 +164,12 @@ function GlobalSearch({ collapsed, onExpand }) {
 export default function Layout({ children, theme, setTheme }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+
+  // closed at all times unless hover/keyboard forces it open
+  const [collapsed, setCollapsed] = useState(true);
+
+  // if user explicitly expanded via Ctrl+K search, keep open until mouse leaves
+  const [forceOpen, setForceOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -188,23 +193,52 @@ export default function Layout({ children, theme, setTheme }) {
     return () => document.removeEventListener('keydown', handler);
   }, [navigate]);
 
+  const openSidebar = useCallback(() => {
+    setCollapsed(false);
+    setForceOpen(true);
+  }, []);
+
+  const closeSidebar = useCallback(() => {
+    setForceOpen(false);
+    setCollapsed(true);
+  }, []);
+
+  const handleSidebarEnter = () => {
+    setCollapsed(false);
+  };
+
+  const handleSidebarLeave = () => {
+    // always close when cursor leaves the sidebar area
+    closeSidebar();
+  };
+
   return (
     <div className="layout-root">
       <ShortcutsOverlay />
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+
+      {/* Invisible hover strip so user can open sidebar by moving cursor to the left edge */}
+      <div
+        className="sidebar-hover-strip"
+        onMouseEnter={handleSidebarEnter}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={`sidebar ${collapsed ? 'collapsed' : ''}`}
+        onMouseEnter={handleSidebarEnter}
+        onMouseLeave={handleSidebarLeave}
+      >
         {/* Logo */}
         <div className="sidebar-logo">
           <span className="logo-icon">⬡</span>
           <span className="logo-text">DevTrack</span>
         </div>
 
-        {/* Collapse toggle */}
-        <button className="collapse-btn" onClick={() => setCollapsed(c => !c)}>
-          {collapsed ? '›' : '‹'}
-        </button>
-
         {/* Global search */}
-        <GlobalSearch collapsed={collapsed} onExpand={() => setCollapsed(false)} />
+        <GlobalSearch
+          collapsed={collapsed}
+          onExpand={openSidebar}
+        />
 
         {/* Nav */}
         <nav className="sidebar-nav">
@@ -213,6 +247,10 @@ export default function Layout({ children, theme, setTheme }) {
               key={to}
               to={to}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => {
+                // optional: keep collapsed behavior consistent after navigation
+                // (leave as-is; it will collapse on mouse leave)
+              }}
             >
               <span className="nav-icon">{icon}</span>
               <span className="nav-label">{label}</span>
@@ -243,6 +281,7 @@ export default function Layout({ children, theme, setTheme }) {
             <span className="nav-icon">⎋</span>
             <span className="nav-label">Sign out</span>
           </button>
+
           <div className="sh-hint-row">
             <kbd className="sh-hint-key">Ctrl+/</kbd>
             <span className="nav-label sh-hint-text">Shortcuts</span>
@@ -259,6 +298,18 @@ export default function Layout({ children, theme, setTheme }) {
           display: flex;
           min-height: 100vh;
           background: var(--bg);
+          position: relative;
+        }
+
+        /* Hover strip that sits at the very left edge to trigger opening */
+        .sidebar-hover-strip {
+          position: fixed;
+          left: 0;
+          top: 0;
+          height: 100vh;
+          width: 10px;
+          z-index: 9998;
+          background: transparent;
         }
 
         .sidebar {
@@ -276,6 +327,7 @@ export default function Layout({ children, theme, setTheme }) {
           flex-shrink: 0;
           transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
                       padding 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          z-index: 9999;
         }
 
         .sidebar.collapsed {
@@ -326,27 +378,6 @@ export default function Layout({ children, theme, setTheme }) {
           overflow: hidden;
           white-space: nowrap;
           max-width: 160px;
-        }
-
-        .collapse-btn {
-          background: none;
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          color: var(--muted);
-          cursor: pointer;
-          font-size: 16px;
-          padding: 4px 8px;
-          margin: 8px 8px 8px;
-          transition: all 0.2s;
-          align-self: flex-end;
-          width: calc(100% - 16px);
-          text-align: center;
-        }
-
-        .collapse-btn:hover {
-          background: var(--hover-bg);
-          color: #f97316;
-          border-color: #f97316;
         }
 
         /* Search */
@@ -469,9 +500,7 @@ export default function Layout({ children, theme, setTheme }) {
         .search-result:last-child { border-bottom: none; }
         .search-result:hover { background: var(--hover-bg); }
 
-        .result-icon {
-          font-size: 16px; flex-shrink: 0;
-        }
+        .result-icon { font-size: 16px; flex-shrink: 0; }
 
         .result-text {
           flex: 1;
@@ -575,6 +604,14 @@ export default function Layout({ children, theme, setTheme }) {
           font-size: 13px; font-weight: 700;
           flex-shrink: 0;
           font-family: 'Syne', sans-serif;
+          text-decoration: none;
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .user-avatar:hover {
+          transform: scale(1.08);
+          box-shadow: 0 2px 8px rgba(249,115,22,0.4);
         }
 
         .user-info {
@@ -596,26 +633,8 @@ export default function Layout({ children, theme, setTheme }) {
 
         .user-profile-link:hover { opacity: 0.75; }
 
-        .user-avatar {
-          width: 32px; height: 32px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #f97316, #fb923c);
-          color: white;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 13px; font-weight: 700;
-          flex-shrink: 0;
-          font-family: 'Syne', sans-serif;
-          text-decoration: none;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .user-avatar:hover {
-          transform: scale(1.08);
-          box-shadow: 0 2px 8px rgba(249,115,22,0.4);
-        }
-
         .logout-btn { color: var(--muted); }
+        .logout-btn:hover { background: var(--danger-bg); color: var(--danger-text); }
 
         .sh-hint-row {
           display: flex; align-items: center; gap: 10px;
@@ -633,7 +652,6 @@ export default function Layout({ children, theme, setTheme }) {
         }
 
         .sh-hint-text { font-size: 12px; color: var(--muted); }
-        .logout-btn:hover { background: var(--danger-bg); color: var(--danger-text); }
 
         .layout-main {
           flex: 1;
