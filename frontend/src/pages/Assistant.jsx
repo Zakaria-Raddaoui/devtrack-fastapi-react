@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -127,7 +127,7 @@ export default function Assistant() {
       .then(res => setMessages(res.data.map(m => ({ role: m.role, content: m.content }))))
       .catch(() => { })
       .finally(() => setMsgsLoading(false));
-  }, [activeConv?.id]);
+  }, [activeConv?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom
   useEffect(() => {
@@ -295,7 +295,7 @@ export default function Assistant() {
             <div className="ai-logo">⬡</div>
             <div>
               <h1 className="ai-title">{activeConv ? activeConv.title : 'DevTrack AI'}</h1>
-              <p className="ai-sub">Powered by DevTrack.</p>
+              <p className="ai-sub">Powered by Llama 3.3 · 70B</p>
             </div>
           </div>
         </div>

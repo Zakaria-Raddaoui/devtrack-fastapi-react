@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import api from '../api/axios';
 import ConfirmDialog from '../components/ConfirmDialog';
 import PomodoroTimer from '../components/PomodoroTimer';
+import QuickCapture from '../components/QuickCapture';
 
 function LogModal({ log, topics, onClose, onSaved }) {
   const editing = !!log?.id;
@@ -145,6 +146,7 @@ function LogModal({ log, topics, onClose, onSaved }) {
 function LogCard({ log, topicMap, onEdit, onDelete }) {
   const [deleting, setDeleting] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const topic = topicMap[log.topic_id];
 
   const handleDelete = async () => {
@@ -164,38 +166,85 @@ function LogCard({ log, topicMap, onEdit, onDelete }) {
   const mins = log.time_spent % 60;
   const timeLabel = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
+  // Count lines to know if content is long enough to collapse
+  const lineCount = (log.notes || '').split('\n').length;
+  const charCount = (log.notes || '').length;
+  const isLong = lineCount > 4 || charCount > 280;
+
+  const dateStr = new Date(log.date).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  });
+
   return (
-    <div className="log-card">
-      <div className="log-top">
-        <div className="log-meta">
-          <span className="log-date">
-            {new Date(log.date).toLocaleDateString('en-US', {
-              weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-            })}
-          </span>
+    <div className={`log-card ${expanded ? 'expanded' : ''}`}>
+      {/* ── Header row ── */}
+      <div className="log-header">
+        <div className="log-header-left">
           {topic && (
-            <span className="log-topic">{topic.title}</span>
+            <span className="log-topic-pill">
+              <span className="log-topic-dot" />
+              {topic.title}
+            </span>
           )}
+          <span className="log-date-badge">{dateStr}</span>
         </div>
-        <div className="log-actions">
-          <button className="icon-btn edit-btn" onClick={() => onEdit(log)} title="Edit">✎</button>
-          <button className="icon-btn del-btn" onClick={() => setConfirm(true)} disabled={deleting} title="Delete">
-            {deleting ? '...' : '✕'}
+        <div className="log-header-right">
+          <span className="log-time-pill">
+            <span>◷</span> {timeLabel}
+          </span>
+          <div className="log-actions">
+            <button
+              className="icon-btn expand-btn"
+              onClick={() => setExpanded(e => !e)}
+              title={expanded ? 'Collapse' : 'Read full log'}
+            >
+              {expanded ? '↑' : '↓'}
+            </button>
+            <button className="icon-btn edit-btn" onClick={() => onEdit(log)} title="Edit">✎</button>
+            <button
+              className="icon-btn del-btn"
+              onClick={() => setConfirm(true)}
+              disabled={deleting}
+              title="Delete"
+            >
+              {deleting ? '…' : '✕'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Notes preview / full ── */}
+      <div
+        className={`log-notes-wrap ${expanded ? 'full' : 'preview'}`}
+        onClick={() => !expanded && setExpanded(true)}
+        style={{ cursor: expanded ? 'default' : 'pointer' }}
+      >
+        <div className="log-notes">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {log.notes}
+          </ReactMarkdown>
+        </div>
+        {!expanded && isLong && (
+          <div className="log-fade-overlay">
+            <button className="log-read-more" onClick={e => { e.stopPropagation(); setExpanded(true); }}>
+              Read full log ↓
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Footer (only when expanded) ── */}
+      {expanded && (
+        <div className="log-footer-expanded">
+          <button className="log-collapse-btn" onClick={() => setExpanded(false)}>
+            ↑ Collapse
+          </button>
+          <button className="icon-btn edit-btn-inline" onClick={() => onEdit(log)}>
+            ✎ Edit log
           </button>
         </div>
-      </div>
+      )}
 
-      <div className="log-notes">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {log.notes}
-        </ReactMarkdown>
-      </div>
-
-      <div className="log-footer">
-        <span className="time-badge">
-          <span className="time-icon">◷</span> {timeLabel}
-        </span>
-      </div>
       {confirm && (
         <ConfirmDialog
           title="Delete log"
@@ -404,10 +453,11 @@ export default function Logs() {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
+  const [showCapture, setShowCapture] = useState(false);
   const [topicFilter, setTopicFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [view, setView] = useState('list');
-  const [selected, setSelected] = useState(new Set()); // bulk selection
+  const [selected, setSelected] = useState(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const fetchData = async () => {
@@ -485,6 +535,9 @@ export default function Logs() {
               onClick={() => setView('calendar')}
             >⊞ Calendar</button>
           </div>
+          <button className="capture-btn" onClick={() => setShowCapture(true)} title="Quick Capture — paste a URL">
+            ⚡ Quick Capture
+          </button>
           <button className="primary-btn" onClick={() => setModal({})}>
             <span>+</span> New log
           </button>
@@ -605,6 +658,14 @@ export default function Logs() {
         />
       )}
 
+      {showCapture && (
+        <QuickCapture
+          topics={topics}
+          onClose={() => setShowCapture(false)}
+          onSaved={() => { setShowCapture(false); fetchData(); }}
+        />
+      )}
+
       <style>{`
         .logs-root {
           padding: 40px 44px;
@@ -662,6 +723,20 @@ export default function Logs() {
         .primary-btn span { font-size: 18px; line-height: 1; }
         .primary-btn:hover { background: #ea6c0a; transform: translateY(-1px); }
 
+        .capture-btn {
+          display: flex; align-items: center; gap: 7px;
+          background: var(--card-bg); color: var(--text);
+          border: 1px solid var(--border); border-radius: 10px;
+          padding: 11px 18px; font-size: 14px; font-weight: 600;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+
+        .capture-btn:hover {
+          border-color: #f97316; color: #f97316;
+          background: rgba(249,115,22,0.06);
+        }
+
         .filter-bar {
           display: flex; gap: 12px;
           margin-bottom: 28px; flex-wrap: wrap;
@@ -694,45 +769,135 @@ export default function Logs() {
           margin-top: 4px;
         }
 
+        /* ── Log card ── */
         .log-card {
           background: var(--card-bg);
           border: 1px solid var(--border);
-          border-radius: 16px; padding: 22px;
-          transition: transform 0.2s, box-shadow 0.2s;
-          display: flex; flex-direction: column; gap: 12px;
+          border-radius: 16px;
+          padding: 0;
+          transition: box-shadow 0.2s, border-color 0.2s;
+          overflow: hidden;
         }
 
         .log-card:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 24px var(--shadow);
+          box-shadow: 0 4px 24px var(--shadow);
+          border-color: color-mix(in srgb, var(--border) 60%, #f97316 40%);
         }
 
-        .log-top {
+        .log-card.expanded {
+          border-color: rgba(249,115,22,0.3);
+        }
+
+        /* Header */
+        .log-header {
           display: flex; align-items: center;
-          justify-content: space-between; gap: 12px;
+          justify-content: space-between;
+          padding: 14px 20px;
+          border-bottom: 1px solid var(--border);
+          gap: 12px;
+          background: var(--bg);
         }
 
-        .log-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-        .log-date {
-          font-size: 12px; font-weight: 600;
-          color: var(--muted); letter-spacing: 0.3px;
+        .log-header-left {
+          display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;
         }
 
-        .log-topic {
-          font-size: 11px; font-weight: 600;
-          background: var(--tag-bg); color: var(--tag-text);
-          padding: 3px 10px; border-radius: 99px;
-          text-transform: uppercase; letter-spacing: 0.3px;
+        .log-topic-pill {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: rgba(249,115,22,0.1); color: #f97316;
+          font-size: 11px; font-weight: 700;
+          padding: 4px 10px; border-radius: 99px;
+          text-transform: uppercase; letter-spacing: 0.4px;
+          border: 1px solid rgba(249,115,22,0.25);
+        }
+
+        .log-topic-dot {
+          width: 5px; height: 5px; border-radius: 50%;
+          background: #f97316; flex-shrink: 0;
+        }
+
+        .log-date-badge {
+          font-size: 12px; font-weight: 500; color: var(--muted);
+        }
+
+        .log-header-right {
+          display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+        }
+
+        .log-time-pill {
+          display: inline-flex; align-items: center; gap: 5px;
+          font-size: 12px; font-weight: 700; color: var(--text);
+          background: var(--card-bg); border: 1px solid var(--border);
+          padding: 4px 10px; border-radius: 99px;
         }
 
         .log-actions {
-          display: flex; gap: 4px;
-          opacity: 0.4;
-          transition: opacity 0.2s;
+          display: flex; gap: 2px;
+          opacity: 0; transition: opacity 0.2s;
         }
 
         .log-card:hover .log-actions { opacity: 1; }
+        .log-card.expanded .log-actions { opacity: 1; }
+
+        /* Notes area */
+        .log-notes-wrap {
+          position: relative;
+          padding: 16px 20px;
+        }
+
+        .log-notes-wrap.preview {
+          max-height: 120px;
+          overflow: hidden;
+        }
+
+        .log-notes-wrap.full {
+          max-height: none;
+        }
+
+        .log-fade-overlay {
+          position: absolute; bottom: 0; left: 0; right: 0;
+          height: 60px;
+          background: linear-gradient(to bottom, transparent, var(--card-bg));
+          display: flex; align-items: flex-end; justify-content: center;
+          padding-bottom: 8px;
+        }
+
+        .log-read-more {
+          background: var(--card-bg); border: 1px solid var(--border);
+          border-radius: 99px; padding: 4px 14px;
+          font-size: 11px; font-weight: 600; color: #f97316;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          transition: all 0.15s;
+        }
+
+        .log-read-more:hover { background: rgba(249,115,22,0.08); border-color: #f97316; }
+
+        /* Footer when expanded */
+        .log-footer-expanded {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 20px;
+          border-top: 1px solid var(--border);
+          background: var(--bg);
+        }
+
+        .log-collapse-btn {
+          background: none; border: none;
+          font-size: 12px; font-weight: 600; color: var(--muted);
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          padding: 4px 8px; border-radius: 6px;
+          transition: all 0.15s;
+        }
+
+        .log-collapse-btn:hover { color: var(--text); background: var(--hover-bg); }
+
+        .edit-btn-inline {
+          font-size: 12px !important; font-weight: 600 !important;
+          color: #f97316 !important; padding: 4px 10px !important;
+          border: 1px solid rgba(249,115,22,0.3) !important;
+          border-radius: 6px !important;
+        }
+
+        .edit-btn-inline:hover { background: rgba(249,115,22,0.08) !important; }
 
         .icon-btn {
           background: none; border: none;
@@ -742,6 +907,8 @@ export default function Logs() {
           font-family: 'DM Sans', sans-serif;
         }
 
+        .expand-btn { color: var(--muted); font-size: 16px; }
+        .expand-btn:hover { background: var(--hover-bg); color: var(--text); }
         .edit-btn { color: var(--muted); }
         .edit-btn:hover { background: var(--hover-bg); color: #f97316; }
         .del-btn  { color: var(--muted); }
@@ -749,7 +916,7 @@ export default function Logs() {
 
         .log-notes {
           font-size: 14px; color: var(--text);
-          line-height: 1.65; margin: 0;
+          line-height: 1.7; margin: 0;
         }
 
         .log-notes p  { margin: 0 0 8px; }
@@ -920,21 +1087,6 @@ export default function Logs() {
           margin-top: 6px;
         }
 
-        .log-footer {
-          display: flex; align-items: center; gap: 10px;
-          padding-top: 8px;
-          border-top: 1px solid var(--border);
-        }
-
-        .time-badge {
-          display: flex; align-items: center; gap: 5px;
-          font-size: 13px; font-weight: 600;
-          color: #f97316;
-        }
-
-        .time-icon { font-size: 15px; }
-
-        /* Empty state */
         /* Bulk actions */
         .bulk-toolbar {
           display: flex; align-items: center;
@@ -951,43 +1103,44 @@ export default function Logs() {
         }
 
         .bulk-select-all input {
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-  appearance: none;
-  -webkit-appearance: none;
-  background: var(--card-bg);
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  position: relative;
-}
+          cursor: pointer;
+          width: 16px;
+          height: 16px;
+          appearance: none;
+          -webkit-appearance: none;
+          background: var(--card-bg);
+          border: 2px solid var(--border);
+          border-radius: 4px;
+          transition: all 0.2s ease;
+          position: relative;
+        }
 
-.bulk-select-all input:checked {
-  background: #f97316;
-  border-color: #f97316;
-}
+        .bulk-select-all input:checked {
+          background: #f97316;
+          border-color: #f97316;
+        }
 
-.bulk-select-all input:checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 11px;
-  font-weight: bold;
-}
+        .bulk-select-all input:checked::after {
+          content: '✓';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: white;
+          font-size: 11px;
+          font-weight: bold;
+        }
 
-.bulk-select-all input:hover:not(:checked) {
-  border-color: #f97316;
-  background: rgba(249,115,22,0.1);
-}
-  .log-checkbox:focus,
-.bulk-select-all input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(249,115,22,0.3);
-}
+        .bulk-select-all input:hover:not(:checked) {
+          border-color: #f97316;
+          background: rgba(249,115,22,0.1);
+        }
+
+        .log-checkbox:focus,
+        .bulk-select-all input:focus {
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(249,115,22,0.3);
+        }
 
         .bulk-actions { display: flex; align-items: center; gap: 10px; }
 
@@ -1034,40 +1187,41 @@ export default function Logs() {
         }
 
         .log-checkbox {
-  margin-top: 22px; 
-  cursor: pointer;
-  width: 18px; 
-  height: 18px; 
-  flex-shrink: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  background: var(--card-bg);
-  border: 2px solid var(--border);
-  border-radius: 5px;
-  transition: all 0.2s ease;
-  position: relative;
-}
+          margin-top: 22px;
+          cursor: pointer;
+          width: 18px;
+          height: 18px;
+          flex-shrink: 0;
+          appearance: none;
+          -webkit-appearance: none;
+          background: var(--card-bg);
+          border: 2px solid var(--border);
+          border-radius: 5px;
+          transition: all 0.2s ease;
+          position: relative;
+        }
 
-.log-checkbox:checked {
-  background: #f97316;
-  border-color: #f97316;
-}
+        .log-checkbox:checked {
+          background: #f97316;
+          border-color: #f97316;
+        }
 
-.log-checkbox:checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-}
+        .log-checkbox:checked::after {
+          content: '✓';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+        }
 
-.log-checkbox:hover:not(:checked) {
-  border-color: #f97316;
-  background: rgba(249,115,22,0.1);
-}
+        .log-checkbox:hover:not(:checked) {
+          border-color: #f97316;
+          background: rgba(249,115,22,0.1);
+        }
+
         .log-card-wrap { flex: 1; min-width: 0; }
 
         .empty-state {

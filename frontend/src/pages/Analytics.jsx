@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
-    AreaChart, Area, BarChart, Bar, XAxis, YAxis,
+    BarChart, Bar, XAxis, YAxis,
     CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 import api from '../api/axios';
@@ -163,7 +163,6 @@ export default function Analytics() {
     const [logs, setLogs] = useState([]);
     const [topics, setTopics] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [period, setPeriod] = useState('month'); // 'week' | 'month' | 'year'
 
     useEffect(() => {
         Promise.all([api.get('/logs/'), api.get('/topics/?limit=100')])

@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import QuickCapture from '../components/QuickCapture';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -194,6 +195,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [defaultTopic, setDefaultTopic] = useState('');
+  const [showCapture, setShowCapture] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -271,6 +273,9 @@ export default function Dashboard() {
         </div>
         <div className="db-header-right">
           <DailyRing minutes={todayMins} />
+          <button className="db-capture-btn" onClick={() => setShowCapture(true)} title="Paste a URL to auto-log">
+            ⚡ Quick Capture
+          </button>
           <button className="db-primary-btn" onClick={() => { setDefaultTopic(''); setShowModal(true); }}>
             <span>+</span> Quick log
           </button>
@@ -496,6 +501,14 @@ export default function Dashboard() {
         />
       )}
 
+      {showCapture && (
+        <QuickCapture
+          topics={topics}
+          onClose={() => setShowCapture(false)}
+          onSaved={() => { setShowCapture(false); fetchData(); }}
+        />
+      )}
+
       <style>{`
         .db-root {
           padding: 40px 44px; width: 100%;
@@ -555,6 +568,20 @@ export default function Dashboard() {
 
         .db-primary-btn span { font-size: 18px; line-height: 1; }
         .db-primary-btn:hover { background: #ea6c0a; transform: translateY(-1px); }
+
+        .db-capture-btn {
+          display: flex; align-items: center; gap: 7px;
+          background: var(--card-bg); color: var(--text);
+          border: 1px solid var(--border); border-radius: 10px;
+          padding: 11px 18px; font-size: 14px; font-weight: 600;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+
+        .db-capture-btn:hover {
+          border-color: #f97316; color: #f97316;
+          background: rgba(249,115,22,0.06);
+        }
 
         /* ── Daily ring ── */
         .db-ring-wrap {

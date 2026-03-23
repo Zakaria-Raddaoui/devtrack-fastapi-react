@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import ConfirmDialog from '../components/ConfirmDialog';
+import StudySession from '../components/StudySession';
 
 const DIFFICULTY = {
     beginner: { bg: 'rgba(34,197,94,0.12)', text: '#16a34a', label: 'Beginner', border: '#16a34a' },
@@ -107,7 +108,7 @@ function TopicModal({ topic, defaultStatus, onClose, onSaved }) {
 
 // ─── Topic Card ───────────────────────────────────────────────────────────────
 
-function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes }) {
+function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes, onStartSession }) {
     const [confirm, setConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const navigate = useNavigate();
@@ -178,15 +179,22 @@ function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes }) {
 
                     {/* Footer */}
                     <div className="tp-card-footer">
-                        {loggedMinutes > 0 ? (
-                            <span className="tp-hours-badge">◷ {hours}h logged</span>
-                        ) : (
-                            <span className="tp-hours-badge empty">◷ No logs yet</span>
-                        )}
+                        <span className="tp-hours-badge" style={{ color: loggedMinutes > 0 ? '#f97316' : 'var(--placeholder)' }}>
+                            ◷ {loggedMinutes > 0 ? `${hours}h logged` : 'No logs yet'}
+                        </span>
                         <span className="tp-card-date">
                             {new Date(topic.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
                     </div>
+
+                    {/* Start session button — appears on hover */}
+                    <button
+                        className="tp-session-btn"
+                        onClick={e => { e.stopPropagation(); onStartSession(topic.id); }}
+                        title="Start a study session"
+                    >
+                        ⏱ Start session
+                    </button>
 
                     {confirm && (
                         <ConfirmDialog
@@ -204,7 +212,7 @@ function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes }) {
 
 // ─── Kanban Column ────────────────────────────────────────────────────────────
 
-function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes, onAdd }) {
+function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes, onAdd, onStartSession }) {
     const meta = STATUS_META[status];
     const totalHours = (topics.reduce((s, t) => s + (topicMinutes[t.id] || 0), 0) / 60).toFixed(1);
 
@@ -248,6 +256,7 @@ function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes, onAdd })
                                 onEdit={onEdit}
                                 onDelete={onDelete}
                                 loggedMinutes={topicMinutes[t.id] || 0}
+                                onStartSession={onStartSession}
                             />
                         ))}
                         {provided.placeholder}
@@ -273,7 +282,8 @@ export default function Topics() {
     const [modal, setModal] = useState(null);
     const [defaultStatus, setDefaultStatus] = useState('to_learn');
     const [search, setSearch] = useState('');
-    const [sort, setSort] = useState('date'); // 'date' | 'hours'
+    const [sort, setSort] = useState('date');
+    const [sessionTopicId, setSessionTopicId] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -402,6 +412,7 @@ export default function Topics() {
                             onDelete={fetchData}
                             topicMinutes={topicMinutes}
                             onAdd={openAdd}
+                            onStartSession={setSessionTopicId}
                         />
                     ))}
                 </div>
@@ -414,6 +425,14 @@ export default function Topics() {
                     defaultStatus={defaultStatus}
                     onClose={() => setModal(null)}
                     onSaved={fetchData}
+                />
+            )}
+
+            {sessionTopicId !== null && (
+                <StudySession
+                    topics={topics}
+                    initialTopicId={sessionTopicId}
+                    onClose={() => setSessionTopicId(null)}
                 />
             )}
 
@@ -739,6 +758,30 @@ export default function Topics() {
         .tp-card-date {
           font-size: 10px; color: var(--placeholder);
         }
+          .tp-session-btn {
+  display: none;
+  width: 100%;
+  background: rgba(34,197,94,0.08);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #22c55e;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+
+.tp-card:hover .tp-session-btn {
+  display: block;
+}
+
+.tp-session-btn:hover {
+  background: rgba(34,197,94,0.15);
+  border-color: #22c55e;
+}
 
         /* ── Modal ── */
         .tp-overlay {

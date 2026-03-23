@@ -3,7 +3,24 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine
 import models
-from routers import auth, topics, logs, resources, dashboard, search, profile, notes, roadmaps, assistant, folders, goals, export
+from routers import (
+    auth,
+    topics,
+    logs,
+    resources,
+    dashboard,
+    search,
+    profile,
+    notes,
+    roadmaps,
+    assistant,
+    folders,
+    goals,
+    export,
+    graph,
+    capture,
+    session,
+)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -30,6 +47,10 @@ app.include_router(roadmaps.router)
 app.include_router(assistant.router)
 app.include_router(goals.router)
 app.include_router(export.router)
+app.include_router(graph.router)
+app.include_router(capture.router)
+app.include_router(session.router)
+
 
 @app.get("/")
 def root():

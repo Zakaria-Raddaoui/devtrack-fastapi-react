@@ -14,6 +14,7 @@ const SHORTCUTS = [
             { keys: ['Ctrl', '7'], desc: 'Go to Resources' },
             { keys: ['Ctrl', '8'], desc: 'Go to Analytics' },
             { keys: ['Ctrl', '9'], desc: 'Go to AI Assistant' },
+            { keys: ['Ctrl', '0'], desc: 'Knowledge Graph' },
         ],
     },
     {
@@ -21,6 +22,8 @@ const SHORTCUTS = [
         items: [
             { keys: ['Ctrl', 'K'], desc: 'Open search' },
             { keys: ['Ctrl', '/'], desc: 'Show keyboard shortcuts' },
+            { keys: ['Ctrl', 'Shift', 'V'], desc: 'Quick Capture (paste URL)' },
+            { keys: ['Ctrl', 'Shift', 'S'], desc: 'Start Study Session' },
             { keys: ['Esc'], desc: 'Close modal / overlay' },
         ],
     },
