@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import api from '../api/axios';
 import ConfirmDialog from '../components/ConfirmDialog';
 
-// ─── Shared styles injected once at the top level ───────────────────────────
+// ─── Shared styles ───────────────────────────────────────────────────────────
 const STYLES = `
   .roadmaps-root, .detail-root {
     padding: 40px 44px;
@@ -59,6 +59,7 @@ const STYLES = `
     white-space: nowrap;
   }
   .rm-primary-btn:hover { background: #ea6c0a; transform: translateY(-1px); }
+  .rm-primary-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
   /* Grid */
   .rm-grid {
@@ -88,9 +89,7 @@ const STYLES = `
     justify-content: space-between;
   }
 
-  .rm-card-icon {
-    font-size: 22px; color: #f97316; font-weight: 700;
-  }
+  .rm-card-icon { font-size: 22px; color: #f97316; font-weight: 700; }
 
   .rm-card-actions {
     display: flex; gap: 4px;
@@ -121,6 +120,15 @@ const STYLES = `
 
   .rm-card-meta { font-size: 12px; color: var(--muted); }
 
+  /* AI badge on card */
+  .rm-ai-badge {
+    font-size: 10px; font-weight: 700;
+    background: rgba(249,115,22,0.12);
+    color: #f97316; border-radius: 99px;
+    padding: 2px 8px; letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
   /* Progress bar */
   .rm-progress-wrap { display: flex; flex-direction: column; gap: 5px; }
 
@@ -147,10 +155,7 @@ const STYLES = `
   }
   .rm-back-btn:hover { color: #f97316; }
 
-  .rm-detail-header {
-    margin-bottom: 32px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
+  .rm-detail-header { margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
 
   .rm-detail-title-row {
     display: flex; align-items: flex-start;
@@ -222,7 +227,6 @@ const STYLES = `
     background: #22c55e; border-color: #22c55e;
     animation: rmCheckPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   @keyframes rmCheckPop {
     0%   { transform: scale(0.8); }
     50%  { transform: scale(1.2); }
@@ -246,12 +250,8 @@ const STYLES = `
     gap: 8px; flex-wrap: wrap; margin-bottom: 3px;
   }
 
-  .rm-step-title {
-    font-size: 15px; font-weight: 600; color: var(--text);
-  }
-  .rm-step.done .rm-step-title {
-    text-decoration: line-through; color: var(--muted);
-  }
+  .rm-step-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .rm-step.done .rm-step-title { text-decoration: line-through; color: var(--muted); }
 
   .rm-step-topic {
     font-size: 11px; font-weight: 600;
@@ -320,7 +320,6 @@ const STYLES = `
     font-size: 16px; color: var(--muted);
     cursor: pointer; transition: all 0.15s;
   }
-
   .rm-panel-toggle:hover { border-color: #f97316; color: #f97316; }
   .rm-panel-toggle.active { color: #f97316; border-color: rgba(249,115,22,0.3); }
 
@@ -329,11 +328,9 @@ const STYLES = `
     grid-template-columns: 1fr 280px;
     gap: 28px; align-items: start;
   }
-
   .rm-two-col.panel-hidden { grid-template-columns: 1fr; }
 
   .rm-col-steps { display: flex; flex-direction: column; }
-
   .rm-col-summary { display: flex; flex-direction: column; gap: 16px; }
 
   .rm-summary-card {
@@ -349,7 +346,6 @@ const STYLES = `
     width: 120px; height: 120px;
     display: flex; align-items: center; justify-content: center;
   }
-
   .rm-ring-wrap svg { position: absolute; top: 0; left: 0; }
 
   .rm-ring-label {
@@ -376,24 +372,11 @@ const STYLES = `
     border-top: 1px solid var(--border);
   }
 
-  .rm-stat-row {
-    display: flex; align-items: center; gap: 8px;
-  }
+  .rm-stat-row { display: flex; align-items: center; gap: 8px; }
+  .rm-stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .rm-stat-label { font-size: 13px; color: var(--muted); flex: 1; }
+  .rm-stat-val { font-size: 14px; font-weight: 700; font-family: 'Syne', sans-serif; }
 
-  .rm-stat-dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  }
-
-  .rm-stat-label {
-    font-size: 13px; color: var(--muted); flex: 1;
-  }
-
-  .rm-stat-val {
-    font-size: 14px; font-weight: 700;
-    font-family: 'Syne', sans-serif;
-  }
-
-  /* Topics linked card */
   .rm-topics-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -418,18 +401,12 @@ const STYLES = `
   .rm-linked-topic-name { flex: 1; }
 
   .rm-linked-topic-count {
-    font-size: 12px; font-weight: 600;
-    color: var(--muted);
-    background: var(--bg);
-    padding: 2px 8px; border-radius: 99px;
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    background: var(--bg); padding: 2px 8px; border-radius: 99px;
     border: 1px solid var(--border);
   }
 
-  .rm-linked-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #f97316; flex-shrink: 0;
-  }
-
+  .rm-linked-dot { width: 6px; height: 6px; border-radius: 50%; background: #f97316; flex-shrink: 0; }
   .rm-no-topics { font-size: 13px; color: var(--placeholder); }
 
   .rm-summary-meta { gap: 12px !important; }
@@ -440,20 +417,7 @@ const STYLES = `
   }
 
   .rm-meta-label { font-size: 12px; color: var(--muted); }
-
-  .rm-meta-val {
-    font-size: 12px; font-weight: 600;
-    color: var(--text); text-align: right;
-  }
-
-  .rm-info-label {
-    font-size: 11px; font-weight: 600;
-    color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
-  }
-
-  .rm-info-val {
-    font-size: 13px; color: var(--text); font-weight: 500;
-  }
+  .rm-meta-val { font-size: 12px; font-weight: 600; color: var(--text); text-align: right; }
 
   /* Empty state */
   .rm-empty {
@@ -462,23 +426,19 @@ const STYLES = `
     padding: 80px 20px; gap: 12px; text-align: center;
   }
   .rm-empty-icon { font-size: 48px; color: var(--border); margin-bottom: 8px; }
-  .rm-empty-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px; font-weight: 700; color: var(--text);
-  }
+  .rm-empty-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
   .rm-empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
 
-  /* Shared icon buttons */
+  /* Icon buttons */
   .rm-icon-btn {
     background: none; border: none;
     border-radius: 6px; padding: 4px 7px;
     font-size: 13px; cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
   }
   .rm-icon-btn.edit:hover { background: var(--hover-bg); color: #f97316; }
   .rm-icon-btn.del:hover  { background: var(--danger-bg); color: var(--danger-text); }
-  .rm-icon-btn { color: var(--muted); }
 
   /* Modal */
   .rm-overlay {
@@ -523,9 +483,7 @@ const STYLES = `
   .rm-modal-form { display: flex; flex-direction: column; gap: 18px; }
 
   .rm-field { display: flex; flex-direction: column; gap: 7px; }
-
   .rm-field label { font-size: 13px; font-weight: 500; color: var(--muted); }
-
   .rm-optional { font-weight: 400; color: var(--placeholder); }
 
   .rm-field input, .rm-field select, .rm-field textarea {
@@ -576,6 +534,111 @@ const STYLES = `
     animation: rm-spin 0.7s linear infinite;
     display: inline-block;
   }
+
+  /* ── AI Generate modal specific styles ── */
+  .rm-gen-ai-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+  }
+
+  .rm-gen-ai-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, rgba(249,115,22,0.2), rgba(249,115,22,0.08));
+    border: 1px solid rgba(249,115,22,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+
+  .rm-gen-ai-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 700; color: var(--text); margin: 0;
+  }
+
+  .rm-gen-ai-sub {
+    font-size: 13px; color: var(--muted); margin: 0 0 24px; line-height: 1.5;
+  }
+
+  .rm-skill-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+
+  .rm-skill-option {
+    border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 12px 10px;
+    cursor: pointer; transition: all 0.2s;
+    text-align: center; background: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .rm-skill-option:hover { border-color: #f97316; background: rgba(249,115,22,0.04); }
+  .rm-skill-option.selected {
+    border-color: #f97316; background: rgba(249,115,22,0.08);
+  }
+
+  .rm-skill-emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  .rm-skill-label {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    display: block; margin-bottom: 2px;
+  }
+
+  .rm-skill-desc { font-size: 11px; color: var(--muted); display: block; }
+
+  .rm-generating-state {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 16px;
+    padding: 24px 0; text-align: center;
+  }
+
+  .rm-gen-ring {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: #f97316;
+    border-radius: 50%;
+    animation: rm-spin 0.8s linear infinite;
+  }
+
+  .rm-gen-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 700; color: var(--text); margin: 0;
+  }
+
+  .rm-gen-sub { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .rm-gen-steps-preview {
+    width: 100%; display: flex; flex-direction: column; gap: 6px; margin-top: 4px;
+  }
+
+  .rm-gen-step-pill {
+    background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+    animation: rm-fadeIn 0.3s ease forwards;
+  }
+
+  .rm-gen-step-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #f97316; flex-shrink: 0;
+  }
+
+  .rm-divider {
+    height: 1px; background: var(--border); margin: 4px 0;
+  }
+
+  .rm-or-text {
+    font-size: 12px; color: var(--placeholder);
+    text-align: center; margin: 0;
+  }
+
+  .rm-ghost-btn {
+    background: none; border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px;
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center;
+    justify-content: center;
+  }
+  .rm-ghost-btn:hover { border-color: var(--muted); color: var(--text); }
 `;
 
 function StyleInjector() {
@@ -595,10 +658,201 @@ function StyleInjector() {
     return null;
 }
 
-// ─── Modals ──────────────────────────────────────────────────────────────────
+// ─── AI Generate Modal ────────────────────────────────────────────────────────
+
+const SKILL_LEVELS = [
+    { value: 'beginner', emoji: '🌱', label: 'Beginner', desc: 'Just starting out' },
+    { value: 'intermediate', emoji: '⚡', label: 'Intermediate', desc: 'Some experience' },
+    { value: 'advanced', emoji: '🚀', label: 'Advanced', desc: 'Ready to go deep' },
+];
+
+// Animated placeholder titles to inspire the user
+const EXAMPLE_TITLES = [
+    'Becoming a DevOps Engineer',
+    'Mastering React & TypeScript',
+    'Learning System Design',
+    'Full Stack with FastAPI',
+    'Machine Learning Fundamentals',
+];
+
+function GenerateModal({ onClose, onCreated }) {
+    const [title, setTitle] = useState('');
+    const [skillLevel, setSkillLevel] = useState('beginner');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [placeholder, setPlaceholder] = useState(EXAMPLE_TITLES[0]);
+
+    // Cycle placeholder text for inspiration
+    useEffect(() => {
+        let i = 0;
+        const id = setInterval(() => {
+            i = (i + 1) % EXAMPLE_TITLES.length;
+            setPlaceholder(EXAMPLE_TITLES[i]);
+        }, 2500);
+        return () => clearInterval(id);
+    }, []);
+
+    const generate = async (e) => {
+        e.preventDefault();
+        if (!title.trim()) return;
+        setLoading(true);
+        setError('');
+        try {
+            const res = await api.post('/roadmaps/generate', {
+                title: title.trim(),
+                skill_level: skillLevel,
+            });
+            onCreated(res.data);
+            onClose();
+        } catch (err) {
+            const d = err.response?.data?.detail;
+            setError(typeof d === 'string' ? d : 'Generation failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return createPortal(
+        <div className="rm-overlay" onClick={!loading ? onClose : undefined}>
+            <div className="rm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+
+                {loading ? (
+                    /* ── Generating state ── */
+                    <div className="rm-generating-state">
+                        <div className="rm-gen-ring" />
+                        <p className="rm-gen-title">Building your roadmap…</p>
+                        <p className="rm-gen-sub">
+                            AI is crafting a personalised path for <strong>"{title}"</strong>
+                        </p>
+                        <div className="rm-gen-steps-preview">
+                            {['Analysing your skill level', 'Reviewing your existing topics', 'Ordering steps from foundation to mastery', 'Linking steps to your topics'].map((s, i) => (
+                                <div key={i} className="rm-gen-step-pill" style={{ animationDelay: `${i * 0.15}s` }}>
+                                    <div className="rm-gen-step-dot" />
+                                    {s}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <div className="rm-modal-header">
+                            <div className="rm-gen-ai-header">
+                                <div className="rm-gen-ai-icon">✦</div>
+                                <h2 className="rm-gen-ai-title">Generate roadmap</h2>
+                            </div>
+                            <button className="rm-modal-close" onClick={onClose}>✕</button>
+                        </div>
+
+                        <p className="rm-gen-ai-sub">
+                            Describe your goal and AI will build a complete, ordered learning path tailored to your skill level and existing knowledge.
+                        </p>
+
+                        <form onSubmit={generate} className="rm-modal-form">
+                            <div className="rm-field">
+                                <label>What do you want to achieve?</label>
+                                <input
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    placeholder={placeholder}
+                                    required
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="rm-field">
+                                <label>Your current skill level</label>
+                                <div className="rm-skill-grid">
+                                    {SKILL_LEVELS.map(s => (
+                                        <button
+                                            key={s.value}
+                                            type="button"
+                                            className={`rm-skill-option ${skillLevel === s.value ? 'selected' : ''}`}
+                                            onClick={() => setSkillLevel(s.value)}
+                                        >
+                                            <span className="rm-skill-emoji">{s.emoji}</span>
+                                            <span className="rm-skill-label">{s.label}</span>
+                                            <span className="rm-skill-desc">{s.desc}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {error && <p className="rm-form-error">{error}</p>}
+
+                            <button type="submit" className="rm-submit-btn" disabled={!title.trim()}>
+                                ✦ Generate roadmap
+                            </button>
+
+                            <div className="rm-divider" />
+                            <p className="rm-or-text">Prefer to build it yourself?</p>
+
+                            <ManualCreateInline onCreated={onCreated} onClose={onClose} />
+                        </form>
+                    </>
+                )}
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+// ─── Inline manual create (inside generate modal, collapsed by default) ───────
+
+function ManualCreateInline({ onCreated, onClose }) {
+    const [open, setOpen] = useState(false);
+    const [form, setForm] = useState({ title: '', description: '' });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+    const submit = async e => {
+        e.preventDefault(); setLoading(true); setError('');
+        try {
+            const res = await api.post('/roadmaps/', form);
+            onCreated(res.data);
+            onClose();
+        } catch (err) {
+            const d = err.response?.data?.detail;
+            setError(typeof d === 'string' ? d : 'Something went wrong');
+        } finally { setLoading(false); }
+    };
+
+    if (!open) return (
+        <button type="button" className="rm-ghost-btn" onClick={() => setOpen(true)}>
+            Create blank roadmap manually
+        </button>
+    );
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="rm-field">
+                <label>Title</label>
+                <input name="title" value={form.title} onChange={handle}
+                    placeholder="e.g. My custom roadmap" required autoFocus />
+            </div>
+            <div className="rm-field">
+                <label>Description <span className="rm-optional">(optional)</span></label>
+                <textarea name="description" value={form.description} onChange={handle}
+                    placeholder="What's this roadmap about?" rows={2} />
+            </div>
+            {error && <p className="rm-form-error">{error}</p>}
+            <button
+                type="button"
+                className="rm-submit-btn"
+                disabled={loading || !form.title.trim()}
+                onClick={submit}
+                style={{ background: '#374151' }}
+            >
+                {loading ? <span className="rm-spinner" /> : 'Create blank roadmap'}
+            </button>
+        </div>
+    );
+}
+
+// ─── Edit roadmap modal (title/desc only) ────────────────────────────────────
 
 function RoadmapModal({ roadmap, onClose, onSaved }) {
-    const editing = !!roadmap?.id;
     const [form, setForm] = useState({ title: roadmap?.title || '', description: roadmap?.description || '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -608,8 +862,7 @@ function RoadmapModal({ roadmap, onClose, onSaved }) {
     const submit = async e => {
         e.preventDefault(); setLoading(true); setError('');
         try {
-            if (editing) await api.put(`/roadmaps/${roadmap.id}`, form);
-            else await api.post('/roadmaps/', form);
+            await api.put(`/roadmaps/${roadmap.id}`, form);
             onSaved(); onClose();
         } catch (err) {
             const d = err.response?.data?.detail;
@@ -621,23 +874,21 @@ function RoadmapModal({ roadmap, onClose, onSaved }) {
         <div className="rm-overlay" onClick={onClose}>
             <div className="rm-modal" onClick={e => e.stopPropagation()}>
                 <div className="rm-modal-header">
-                    <h2>{editing ? 'Edit roadmap' : 'New roadmap'}</h2>
+                    <h2>Edit roadmap</h2>
                     <button className="rm-modal-close" onClick={onClose}>✕</button>
                 </div>
                 <form onSubmit={submit} className="rm-modal-form">
                     <div className="rm-field">
                         <label>Title</label>
-                        <input name="title" value={form.title} onChange={handle}
-                            placeholder="e.g. Become a DevOps Engineer" required autoFocus />
+                        <input name="title" value={form.title} onChange={handle} required autoFocus />
                     </div>
                     <div className="rm-field">
-                        <label>Description</label>
-                        <textarea name="description" value={form.description} onChange={handle}
-                            placeholder="What's this roadmap about?" rows={3} />
+                        <label>Description <span className="rm-optional">(optional)</span></label>
+                        <textarea name="description" value={form.description} onChange={handle} rows={3} />
                     </div>
                     {error && <p className="rm-form-error">{error}</p>}
                     <button type="submit" className="rm-submit-btn" disabled={loading}>
-                        {loading ? <span className="rm-spinner" /> : (editing ? 'Save changes' : 'Create roadmap')}
+                        {loading ? <span className="rm-spinner" /> : 'Save changes'}
                     </button>
                 </form>
             </div>
@@ -645,6 +896,8 @@ function RoadmapModal({ roadmap, onClose, onSaved }) {
         document.body
     );
 }
+
+// ─── Step modal ───────────────────────────────────────────────────────────────
 
 function StepModal({ step, roadmapId, topics, nextOrder, onClose, onSaved }) {
     const editing = !!step?.id;
@@ -718,13 +971,14 @@ function StepModal({ step, roadmapId, topics, nextOrder, onClose, onSaved }) {
     );
 }
 
-// ─── Detail view ─────────────────────────────────────────────────────────────
+// ─── Detail view ──────────────────────────────────────────────────────────────
 
 function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
     const [steps, setSteps] = useState(roadmap.steps || []);
     const [stepModal, setStepModal] = useState(null);
     const [confirm, setConfirm] = useState(null);
     const [editModal, setEditModal] = useState(false);
+    const [panelOpen, setPanelOpen] = useState(true);
 
     const refresh = useCallback(async () => {
         const res = await api.get(`/roadmaps/${roadmap.id}`);
@@ -750,11 +1004,9 @@ function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
     const total = steps.length;
     const pct = total ? Math.round((done / total) * 100) : 0;
     const color = pct === 100 ? '#22c55e' : pct >= 60 ? '#f97316' : '#3b82f6';
-    const [panelOpen, setPanelOpen] = useState(true);
 
     return (
         <div className="detail-root">
-            {/* Back + header */}
             <div className="rm-detail-header-wrap">
                 <button className="rm-back-btn" onClick={onBack}>← Back to roadmaps</button>
                 <div className="rm-detail-title-row">
@@ -784,9 +1036,7 @@ function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
                 </div>
             </div>
 
-            {/* Two-column layout */}
             <div className={`rm-two-col ${panelOpen ? '' : 'panel-hidden'}`}>
-
                 {/* Left — steps */}
                 <div className="rm-col-steps">
                     <div className="rm-steps-list">
@@ -794,7 +1044,7 @@ function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
                             <div className="rm-steps-empty">
                                 <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>⟶</div>
                                 <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '0 0 6px' }}>No steps yet</p>
-                                <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>Break your roadmap into actionable steps</p>
+                                <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>Add steps manually below</p>
                                 <button className="rm-primary-btn" onClick={() => setStepModal({})}>+ Add first step</button>
                             </div>
                         ) : (
@@ -838,18 +1088,13 @@ function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
                 {/* Right — summary panel */}
                 {panelOpen && (
                     <div className="rm-col-summary">
-
-                        {/* Completion ring */}
                         <div className="rm-summary-card">
                             <div className="rm-ring-wrap">
                                 <svg width="120" height="120" viewBox="0 0 120 120">
                                     <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" strokeWidth="8" />
                                     <circle
                                         cx="60" cy="60" r="50"
-                                        fill="none"
-                                        stroke={color}
-                                        strokeWidth="8"
-                                        strokeLinecap="round"
+                                        fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"
                                         strokeDasharray={`${2 * Math.PI * 50}`}
                                         strokeDashoffset={`${2 * Math.PI * 50 * (1 - pct / 100)}`}
                                         transform="rotate(-90 60 60)"
@@ -918,7 +1163,6 @@ function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
                                 </span>
                             </div>
                         </div>
-
                     </div>
                 )}
             </div>
@@ -954,7 +1198,7 @@ function RoadmapDetail({ roadmap, topics, onBack, onUpdated }) {
     );
 }
 
-// ─── Card ────────────────────────────────────────────────────────────────────
+// ─── Card ─────────────────────────────────────────────────────────────────────
 
 function RoadmapCard({ roadmap, onClick, onDelete }) {
     const [confirm, setConfirm] = useState(false);
@@ -1014,13 +1258,13 @@ function RoadmapCard({ roadmap, onClick, onDelete }) {
     );
 }
 
-// ─── Main page ───────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Roadmaps() {
     const [roadmaps, setRoadmaps] = useState([]);
     const [topics, setTopics] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [modal, setModal] = useState(null);
+    const [modal, setModal] = useState(false);
     const [selected, setSelected] = useState(null);
 
     const fetchData = useCallback(async () => {
@@ -1037,6 +1281,12 @@ export default function Roadmaps() {
     const handleUpdated = useCallback((updated) => {
         setRoadmaps(prev => prev.map(r => r.id === updated.id ? updated : r));
         setSelected(updated);
+    }, []);
+
+    // Called after AI generation — go straight to the new roadmap detail
+    const handleCreated = useCallback((newRoadmap) => {
+        setRoadmaps(prev => [newRoadmap, ...prev]);
+        setSelected(newRoadmap);
     }, []);
 
     if (loading) return (
@@ -1067,8 +1317,8 @@ export default function Roadmaps() {
                         <h1 className="rm-page-title">Roadmaps</h1>
                         <p className="rm-page-sub">{roadmaps.length} roadmap{roadmaps.length !== 1 ? 's' : ''}</p>
                     </div>
-                    <button className="rm-primary-btn" onClick={() => setModal({})}>
-                        <span>+</span> New roadmap
+                    <button className="rm-primary-btn" onClick={() => setModal(true)}>
+                        ✦ Generate roadmap
                     </button>
                 </div>
 
@@ -1076,8 +1326,12 @@ export default function Roadmaps() {
                     <div className="rm-empty">
                         <div className="rm-empty-icon">⟶</div>
                         <p className="rm-empty-title">No roadmaps yet</p>
-                        <p className="rm-empty-sub">Create a learning path and track your progress step by step</p>
-                        <button className="rm-primary-btn" onClick={() => setModal({})}>+ New roadmap</button>
+                        <p className="rm-empty-sub">
+                            Describe your goal and AI will build a complete learning path for you
+                        </p>
+                        <button className="rm-primary-btn" onClick={() => setModal(true)}>
+                            ✦ Generate your first roadmap
+                        </button>
                     </div>
                 ) : (
                     <div className="rm-grid">
@@ -1092,11 +1346,10 @@ export default function Roadmaps() {
                     </div>
                 )}
 
-                {modal !== null && (
-                    <RoadmapModal
-                        roadmap={null}
-                        onClose={() => setModal(null)}
-                        onSaved={fetchData}
+                {modal && (
+                    <GenerateModal
+                        onClose={() => setModal(false)}
+                        onCreated={handleCreated}
                     />
                 )}
             </div>

@@ -3,20 +3,22 @@ from typing import Optional, List
 from datetime import datetime
 from models import DifficultyEnum, StatusEnum
 
-
 # ─────────────────────────────────────────
 # User schemas
 # ─────────────────────────────────────────
+
 
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
 
+
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     bio: Optional[str] = None
     is_public: Optional[bool] = None
+
 
 class UserResponse(BaseModel):
     id: int
@@ -34,6 +36,7 @@ class UserResponse(BaseModel):
 # Topic schemas
 # ─────────────────────────────────────────
 
+
 class TopicCreate(BaseModel):
     title: str
     description: Optional[str] = None
@@ -41,12 +44,14 @@ class TopicCreate(BaseModel):
     status: StatusEnum = StatusEnum.to_learn
     goal_hours: Optional[float] = None
 
+
 class TopicUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     difficulty: Optional[DifficultyEnum] = None
     status: Optional[StatusEnum] = None
     goal_hours: Optional[float] = None
+
 
 class TopicResponse(BaseModel):
     id: int
@@ -66,17 +71,22 @@ class TopicResponse(BaseModel):
 # Log schemas
 # ─────────────────────────────────────────
 
+
 class LogCreate(BaseModel):
     notes: str
     time_spent: int
     topic_id: int
     date: Optional[datetime] = None
+    confidence: Optional[int] = None  # 0–100
+
 
 class LogUpdate(BaseModel):
     notes: Optional[str] = None
     time_spent: Optional[int] = None
     topic_id: Optional[int] = None
     date: Optional[datetime] = None
+    confidence: Optional[int] = None
+
 
 class LogResponse(BaseModel):
     id: int
@@ -85,6 +95,7 @@ class LogResponse(BaseModel):
     topic_id: int
     user_id: int
     date: datetime
+    confidence: Optional[int] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -94,35 +105,38 @@ class LogResponse(BaseModel):
 # Resource schemas
 # ─────────────────────────────────────────
 
+
 class ResourceCreate(BaseModel):
-    title:         str
-    url:           str
+    title: str
+    url: str
     resource_type: Optional[str] = None
-    topic_id:      Optional[int] = None
-    rating:        Optional[int] = None
-    is_read:       bool = False
-    notes:         Optional[str] = None
+    topic_id: Optional[int] = None
+    rating: Optional[int] = None
+    is_read: bool = False
+    notes: Optional[str] = None
+
 
 class ResourceUpdate(BaseModel):
-    title:         Optional[str] = None
-    url:           Optional[str] = None
+    title: Optional[str] = None
+    url: Optional[str] = None
     resource_type: Optional[str] = None
-    topic_id:      Optional[int] = None
-    rating:        Optional[int] = None
-    is_read:       Optional[bool] = None
-    notes:         Optional[str] = None
+    topic_id: Optional[int] = None
+    rating: Optional[int] = None
+    is_read: Optional[bool] = None
+    notes: Optional[str] = None
+
 
 class ResourceResponse(BaseModel):
-    id:            int
-    title:         str
-    url:           str
+    id: int
+    title: str
+    url: str
     resource_type: Optional[str]
-    topic_id:      Optional[int]
-    owner_id:      int
-    rating:        Optional[int]
-    is_read:       bool
-    notes:         Optional[str]
-    created_at:    datetime
+    topic_id: Optional[int]
+    owner_id: int
+    rating: Optional[int]
+    is_read: bool
+    notes: Optional[str]
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -131,9 +145,11 @@ class ResourceResponse(BaseModel):
 # Auth schemas
 # ─────────────────────────────────────────
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 class TokenData(BaseModel):
     username: Optional[str] = None
@@ -143,9 +159,11 @@ class TokenData(BaseModel):
 # Dashboard schemas
 # ─────────────────────────────────────────
 
+
 class WeeklyActivity(BaseModel):
     date: str
     hours: float
+
 
 class DashboardStats(BaseModel):
     total_hours: float
@@ -159,11 +177,13 @@ class DashboardStats(BaseModel):
 # Search schemas
 # ─────────────────────────────────────────
 
+
 class SearchResult(BaseModel):
-    type: str        # "topic" | "log" | "resource"
+    type: str  # "topic" | "log" | "resource"
     id: int
     title: str
     subtitle: Optional[str] = None
+
 
 class SearchResponse(BaseModel):
     results: List[SearchResult]
@@ -174,12 +194,14 @@ class SearchResponse(BaseModel):
 # Public profile schemas
 # ─────────────────────────────────────────
 
+
 class PublicTopicResponse(BaseModel):
     title: str
     difficulty: DifficultyEnum
     status: StatusEnum
 
     model_config = {"from_attributes": True}
+
 
 class PublicProfileResponse(BaseModel):
     username: str
@@ -195,6 +217,7 @@ class PublicProfileResponse(BaseModel):
 # Note schemas
 # ─────────────────────────────────────────
 
+
 class NoteCreate(BaseModel):
     title: str
     content: Optional[str] = None
@@ -202,12 +225,14 @@ class NoteCreate(BaseModel):
     is_pinned: bool = False
     folder_id: Optional[int] = None
 
+
 class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     tags: Optional[str] = None
     is_pinned: Optional[bool] = None
     folder_id: Optional[int] = None
+
 
 class NoteResponse(BaseModel):
     id: int
@@ -227,6 +252,7 @@ class NoteResponse(BaseModel):
 # Roadmap schemas
 # ─────────────────────────────────────────
 
+
 class RoadmapStepCreate(BaseModel):
     title: str
     description: Optional[str] = None
@@ -234,12 +260,14 @@ class RoadmapStepCreate(BaseModel):
     is_completed: bool = False
     topic_id: Optional[int] = None
 
+
 class RoadmapStepUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     order: Optional[int] = None
     is_completed: Optional[bool] = None
     topic_id: Optional[int] = None
+
 
 class RoadmapStepResponse(BaseModel):
     id: int
@@ -253,13 +281,16 @@ class RoadmapStepResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class RoadmapCreate(BaseModel):
     title: str
     description: Optional[str] = None
 
+
 class RoadmapUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+
 
 class RoadmapResponse(BaseModel):
     id: int
@@ -277,11 +308,13 @@ class RoadmapResponse(BaseModel):
 # Topic detail schema
 # ─────────────────────────────────────────
 
+
 class LinkedStepResponse(BaseModel):
-    id:            int
-    title:         str
-    is_completed:  bool
+    id: int
+    title: str
+    is_completed: bool
     roadmap_title: str
+
 
 class TopicDetailResponse(BaseModel):
     id: int
@@ -297,9 +330,9 @@ class TopicDetailResponse(BaseModel):
     # Aggregated
     total_minutes: int
     total_logs: int
-    logs:         List[LogResponse]         = []
-    resources:    List[ResourceResponse]    = []
-    linked_steps: List[LinkedStepResponse]  = []
+    logs: List[LogResponse] = []
+    resources: List[ResourceResponse] = []
+    linked_steps: List[LinkedStepResponse] = []
 
     model_config = {"from_attributes": True}
 
@@ -308,12 +341,15 @@ class TopicDetailResponse(BaseModel):
 # Assistant schemas
 # ─────────────────────────────────────────
 
+
 class AssistantMessage(BaseModel):
     role: str  # "user" | "assistant"
     content: str
 
+
 class AssistantRequest(BaseModel):
     messages: List[AssistantMessage]
+
 
 class AssistantResponse(BaseModel):
     reply: str
@@ -323,11 +359,14 @@ class AssistantResponse(BaseModel):
 # Folder schemas
 # ─────────────────────────────────────────
 
+
 class FolderCreate(BaseModel):
     title: str
 
+
 class FolderUpdate(BaseModel):
     title: Optional[str] = None
+
 
 class FolderResponse(BaseModel):
     id: int
@@ -343,6 +382,7 @@ class FolderResponse(BaseModel):
 # Chat history schemas
 # ─────────────────────────────────────────
 
+
 class ChatMessageResponse(BaseModel):
     id: int
     role: str
@@ -356,11 +396,14 @@ class ChatMessageResponse(BaseModel):
 # Conversation schemas
 # ─────────────────────────────────────────
 
+
 class ConversationCreate(BaseModel):
     title: str = "New chat"
 
+
 class ConversationUpdate(BaseModel):
     title: str
+
 
 class ConversationResponse(BaseModel):
     id: int
@@ -371,12 +414,14 @@ class ConversationResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class ConversationWithMessages(BaseModel):
     id: int
     title: str
     messages: List[ChatMessageResponse] = []
 
     model_config = {"from_attributes": True}
+
 
 class ChatRequest(BaseModel):
     conversation_id: int
@@ -387,33 +432,36 @@ class ChatRequest(BaseModel):
 # Goal schemas
 # ─────────────────────────────────────────
 
+
 class GoalCreate(BaseModel):
-    title:        str
-    description:  Optional[str]  = None
+    title: str
+    description: Optional[str] = None
     target_hours: Optional[float] = None
-    target_date:  Optional[datetime] = None
-    topic_id:     Optional[int]  = None
+    target_date: Optional[datetime] = None
+    topic_id: Optional[int] = None
+
 
 class GoalUpdate(BaseModel):
-    title:        Optional[str]   = None
-    description:  Optional[str]   = None
+    title: Optional[str] = None
+    description: Optional[str] = None
     target_hours: Optional[float] = None
-    target_date:  Optional[datetime] = None
-    topic_id:     Optional[int]   = None
-    is_completed: Optional[bool]  = None
+    target_date: Optional[datetime] = None
+    topic_id: Optional[int] = None
+    is_completed: Optional[bool] = None
+
 
 class GoalResponse(BaseModel):
-    id:           int
-    title:        str
-    description:  Optional[str]
+    id: int
+    title: str
+    description: Optional[str]
     target_hours: Optional[float]
-    target_date:  Optional[datetime]
-    topic_id:     Optional[int]
-    topic_title:  Optional[str] = None
+    target_date: Optional[datetime]
+    topic_id: Optional[int]
+    topic_title: Optional[str] = None
     is_completed: bool
-    owner_id:     int
-    created_at:   datetime
-    updated_at:   datetime
+    owner_id: int
+    created_at: datetime
+    updated_at: datetime
     logged_hours: float = 0.0
 
     model_config = {"from_attributes": True}
@@ -423,19 +471,21 @@ class GoalResponse(BaseModel):
 # Password change schema
 # ─────────────────────────────────────────
 
+
 class PasswordChange(BaseModel):
     current_password: str
-    new_password:     str
+    new_password: str
+
 
 class ProfileStats(BaseModel):
-    total_hours:       float
-    total_sessions:    int
-    topics_total:      int
-    topics_mastered:   int
-    topics_learning:   int
-    active_days:       int
-    goals_active:      int
-    goals_completed:   int
-    notes_count:       int
-    roadmaps_count:    int
-    member_since:      datetime
+    total_hours: float
+    total_sessions: int
+    topics_total: int
+    topics_mastered: int
+    topics_learning: int
+    active_days: int
+    goals_active: int
+    goals_completed: int
+    notes_count: int
+    roadmaps_count: int
+    member_since: datetime

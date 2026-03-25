@@ -758,30 +758,29 @@ export default function Topics() {
         .tp-card-date {
           font-size: 10px; color: var(--placeholder);
         }
-          .tp-session-btn {
-  display: none;
-  width: 100%;
-  background: rgba(34,197,94,0.08);
-  border: 1px solid rgba(34,197,94,0.25);
-  border-radius: 8px;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #22c55e;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  transition: all 0.15s;
-  margin-top: 4px;
-}
 
-.tp-card:hover .tp-session-btn {
-  display: block;
-}
+        .tp-session-btn {
+          display: none;
+          width: 100%;
+          background: rgba(34,197,94,0.08);
+          border: 1px solid rgba(34,197,94,0.2);
+          border-radius: 8px;
+          padding: 8px;
+          font-size: 12px; font-weight: 600;
+          color: #22c55e;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          transition: all 0.15s;
+          margin-top: 4px;
+          letter-spacing: 0.1px;
+        }
 
-.tp-session-btn:hover {
-  background: rgba(34,197,94,0.15);
-  border-color: #22c55e;
-}
+        .tp-card:hover .tp-session-btn { display: block; }
+
+        .tp-session-btn:hover {
+          background: rgba(34,197,94,0.15);
+          border-color: #22c55e;
+        }
 
         /* ── Modal ── */
         .tp-overlay {

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# after the other include_router lines
 from database import engine
 import models
 from routers import (
@@ -20,6 +21,8 @@ from routers import (
     graph,
     capture,
     session,
+    tags,
+    confidence,
 )
 
 models.Base.metadata.create_all(bind=engine)
@@ -50,6 +53,8 @@ app.include_router(export.router)
 app.include_router(graph.router)
 app.include_router(capture.router)
 app.include_router(session.router)
+app.include_router(tags.router)
+app.include_router(confidence.router)
 
 
 @app.get("/")

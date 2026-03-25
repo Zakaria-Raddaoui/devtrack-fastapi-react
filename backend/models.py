@@ -38,6 +38,8 @@ class User(Base):
     chat_messages = relationship("ChatMessage",  back_populates="owner", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="owner", cascade="all, delete-orphan")
     goals         = relationship("Goal",         back_populates="owner", cascade="all, delete-orphan")
+    tags          = relationship("Tag", back_populates="owner", cascade="all, delete-orphan")
+    tag_merge_suggestions = relationship("TagMergeSuggestion", back_populates="owner", cascade="all, delete-orphan")
 
 
 class Topic(Base):
@@ -67,6 +69,7 @@ class Log(Base):
     date       = Column(DateTime(timezone=True), server_default=func.now())
     user_id    = Column(Integer, ForeignKey("users.id"), nullable=False)
     topic_id   = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    confidence = Column(Integer, nullable=True)   # 0–100, user's self-rating
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user  = relationship("User",  back_populates="logs")
@@ -193,3 +196,34 @@ class Goal(Base):
 
     owner = relationship("User", back_populates="goals")
     topic = relationship("Topic")
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("tags.id"), nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    owner = relationship("User", back_populates="tags")
+    parent = relationship("Tag", remote_side="Tag.id", back_populates="children")
+    children = relationship(
+        "Tag", back_populates="parent", cascade="all, delete-orphan"
+    )
+
+
+class TagMergeSuggestion(Base):
+    __tablename__ = "tag_merge_suggestions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    suggestion_key = Column(String(500), nullable=False)  # deterministic key for dedup
+    suggested_parent = Column(String(100), nullable=False)
+    children_json = Column(Text, nullable=False)  # JSON array of child tag names
+    reason = Column(Text, nullable=False)
+    dismissed = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    owner = relationship("User", back_populates="tag_merge_suggestions")

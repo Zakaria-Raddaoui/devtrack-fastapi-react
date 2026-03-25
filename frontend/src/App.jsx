@@ -16,6 +16,7 @@ import Analytics from './pages/Analytics';
 import Assistant from './pages/Assistant';
 import Profile from './pages/Profile';
 import KnowledgeGraph from './pages/KnowledgeGraph';
+import Confidence from './pages/Confidence';
 import PublicProfile from './pages/PublicProfile';
 
 function ProtectedRoute({ children, theme, setTheme }) {
@@ -49,6 +50,7 @@ function AppRoutes() {
       <Route path="/assistant" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Assistant /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Profile /></ProtectedRoute>} />
       <Route path="/graph" element={<ProtectedRoute theme={theme} setTheme={setTheme}><KnowledgeGraph /></ProtectedRoute>} />
+      <Route path="/confidence" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Confidence /></ProtectedRoute>} />
       <Route path="/u/:username" element={<PublicProfile />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

@@ -7,6 +7,14 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import PomodoroTimer from '../components/PomodoroTimer';
 import QuickCapture from '../components/QuickCapture';
 
+function confidenceColor(val) {
+  if (val === null || val === undefined) return '#6b7280';
+  if (val >= 75) return '#22c55e';
+  if (val >= 50) return '#f97316';
+  if (val >= 25) return '#f59e0b';
+  return '#ef4444';
+}
+
 function LogModal({ log, topics, onClose, onSaved }) {
   const editing = !!log?.id;
   const [form, setForm] = useState({
@@ -14,6 +22,7 @@ function LogModal({ log, topics, onClose, onSaved }) {
     notes: log?.notes || '',
     time_spent: log?.time_spent || '',
     date: log?.date ? log.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    confidence: log?.confidence ?? null,
   });
   const [tab, setTab] = useState('write');
   const [showTimer, setShowTimer] = useState(false);
@@ -32,6 +41,7 @@ function LogModal({ log, topics, onClose, onSaved }) {
         notes: form.notes,
         time_spent: parseInt(form.time_spent),
         date: new Date(form.date).toISOString(),
+        confidence: form.confidence !== null ? parseInt(form.confidence) : null,
       };
       if (editing) await api.put(`/logs/${log.id}`, payload);
       else await api.post('/logs/', payload);
@@ -132,6 +142,50 @@ function LogModal({ log, topics, onClose, onSaved }) {
               }}
             />
           )}
+
+          {/* Confidence slider */}
+          <div className="conf-slider-wrap">
+            <div className="conf-slider-header">
+              <label className="conf-slider-label">
+                How confident do you feel about this topic right now?
+              </label>
+              {form.confidence !== null ? (
+                <span className="conf-value-badge" style={{ background: confidenceColor(form.confidence) + '22', color: confidenceColor(form.confidence) }}>
+                  {form.confidence}%
+                </span>
+              ) : (
+                <span className="conf-skip">Skip</span>
+              )}
+            </div>
+            <div className="conf-slider-track">
+              <input
+                type="range" min={0} max={100} step={5}
+                value={form.confidence ?? 50}
+                onChange={e => setForm(f => ({ ...f, confidence: parseInt(e.target.value) }))}
+                onMouseDown={() => { if (form.confidence === null) setForm(f => ({ ...f, confidence: 50 })); }}
+                className="conf-range"
+                style={{
+                  '--conf-color': confidenceColor(form.confidence ?? 50),
+                  background: `linear-gradient(to right, ${confidenceColor(form.confidence ?? 50)} 0%, ${confidenceColor(form.confidence ?? 50)} ${form.confidence ?? 50}%, var(--border) ${form.confidence ?? 50}%, var(--border) 100%)`
+                }}
+              />
+              <div className="conf-marks">
+                <span>Not confident</span>
+                <span>Somewhat</span>
+                <span>Very confident</span>
+              </div>
+            </div>
+            {form.confidence !== null && (
+              <button
+                type="button"
+                className="conf-clear"
+                onClick={() => setForm(f => ({ ...f, confidence: null }))}
+              >
+                Clear rating
+              </button>
+            )}
+          </div>
+
           {error && <p className="form-error">{error}</p>}
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? <span className="spinner" /> : (editing ? 'Save changes' : 'Save log')}
@@ -1588,6 +1642,76 @@ export default function Logs() {
           background: var(--danger-bg);
           border-radius: 8px; padding: 10px 14px;
         }
+
+        /* ── Confidence slider ── */
+        .conf-slider-wrap {
+          background: var(--bg); border: 1px solid var(--border);
+          border-radius: 12px; padding: 14px 16px;
+          display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .conf-slider-header {
+          display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+
+        .conf-slider-label {
+          font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4;
+        }
+
+        .conf-value-badge {
+          font-size: 13px; font-weight: 800;
+          padding: 3px 10px; border-radius: 99px; flex-shrink: 0;
+          font-family: 'Syne', sans-serif;
+        }
+
+        .conf-skip { font-size: 11px; color: var(--placeholder); }
+
+        .conf-slider-track { display: flex; flex-direction: column; gap: 5px; }
+
+        .conf-range {
+          -webkit-appearance: none; width: 100%; height: 5px;
+          border-radius: 99px; outline: none;
+          background: linear-gradient(
+            to right,
+            var(--conf-color, #f97316) 0%,
+            var(--conf-color, #f97316) var(--value, 50%),
+            var(--border) var(--value, 50%),
+            var(--border) 100%
+          );
+          transition: background 0.2s;
+        }
+
+        .conf-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 18px; height: 18px; border-radius: 50%;
+          background: var(--conf-color, #f97316);
+          cursor: pointer; border: 2px solid var(--card-bg);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          transition: transform 0.15s;
+        }
+
+        .conf-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .conf-range::-moz-range-thumb {
+          width: 18px; height: 18px; border-radius: 50%;
+          background: var(--conf-color, #f97316);
+          cursor: pointer; border: 2px solid var(--card-bg);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+
+        .conf-marks {
+          display: flex; justify-content: space-between;
+          font-size: 10px; color: var(--placeholder);
+        }
+
+        .conf-clear {
+          background: none; border: none; font-size: 11px;
+          color: var(--placeholder); cursor: pointer;
+          font-family: 'DM Sans', sans-serif; padding: 0;
+          transition: color 0.15s; align-self: flex-start;
+        }
+
+        .conf-clear:hover { color: var(--muted); }
 
         .submit-btn {
           background: #f97316; color: white; border: none;

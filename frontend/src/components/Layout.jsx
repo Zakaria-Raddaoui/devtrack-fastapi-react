@@ -15,6 +15,7 @@ const NAV = [
   { to: '/goals', icon: <IcoGoals />, label: 'Goals' },
   { to: '/resources', icon: <IcoResources />, label: 'Resources' },
   { to: '/analytics', icon: <IcoAnalytics />, label: 'Analytics' },
+  { to: '/confidence', icon: <IcoConfidence />, label: 'Confidence' },
   { to: '/graph', icon: <IcoGraph />, label: 'Knowledge Graph' },
   { to: '/assistant', icon: <IcoAI />, label: 'AI Assistant' },
 ];
@@ -53,6 +54,9 @@ function IcoGraph() {
 }
 function IcoAI() {
   return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2c-4.4 0-8 2.9-8 7 0 2.3 1.2 4.3 3 5.6V17l3-1.5c.6.1 1.3.2 2 .2 4.4 0 8-2.9 8-7s-3.6-7-8-7z" /><line x1="7" y1="9" x2="7" y2="9" strokeWidth="2" strokeLinecap="round" /><line x1="10" y1="9" x2="10" y2="9" strokeWidth="2" strokeLinecap="round" /><line x1="13" y1="9" x2="13" y2="9" strokeWidth="2" strokeLinecap="round" /></svg>;
+}
+function IcoConfidence() {
+  return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10" r="8" /><path d="M7 10l2 2 4-4" /><circle cx="10" cy="10" r="4" strokeDasharray="3 2" /></svg>;
 }
 
 // ─── Search ───────────────────────────────────────────────────────────────────
