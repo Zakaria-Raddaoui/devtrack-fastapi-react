@@ -21,7 +21,7 @@ function Section({ title, subtitle, children }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Profile() {
-    const { user: authUser, logout } = useAuth();
+    const { user: authUser, logout, refreshUser } = useAuth();
 
     const [profile, setProfile] = useState(null);
     const [stats, setStats] = useState(null);
@@ -87,6 +87,7 @@ export default function Profile() {
                 is_public: profileForm.is_public,
                 profile_picture: profile?.profile_picture || null,
             });
+            await refreshUser();
             setProfileSaved(true);
             setTimeout(() => setProfileSaved(false), 3000);
             fetchData();
@@ -190,6 +191,7 @@ export default function Profile() {
             const url = res.data.url;
             setProfile(p => ({ ...p, profile_picture: url }));
             await api.patch('/me/profile', { profile_picture: url });
+            await refreshUser();
             setAvatarEditor({ open: false, src: '', fileName: '', zoom: 1, rotation: 0, saving: false });
         } catch (err) {
             console.error('Failed to upload image', err);

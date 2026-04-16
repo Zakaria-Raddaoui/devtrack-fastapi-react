@@ -52,6 +52,7 @@ allowed_origins = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "null",
 ]
 
 extra_origins = os.getenv("CORS_ALLOW_ORIGINS")
@@ -85,8 +86,9 @@ app.include_router(session.router)
 app.include_router(tags.router)
 app.include_router(confidence.router)
 
-os.makedirs("uploads", exist_ok=True)
-app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
+uploads_dir = os.getenv("UPLOADS_DIR", "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/api/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 @app.post("/upload")
@@ -97,7 +99,7 @@ def upload_file(request: Request, file: UploadFile = File(...)):
         else "bin"
     )
     filename = f"{uuid.uuid4().hex}.{ext}"
-    path = os.path.join("uploads", filename)
+    path = os.path.join(uploads_dir, filename)
     with open(path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     base_url = str(request.base_url).rstrip("/")

@@ -1,7 +1,55 @@
 {
+  "name": "devtrack-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "desktop/main.js",
+  "scripts": {
+    "frontend:install": "npm --prefix frontend install",
+    "frontend:build": "npm --prefix frontend run build",
+    "backend:install": "python -m pip install -r backend/requirements.txt",
+    "desktop:dev": "electron .",
+    "desktop:pack": "npm run frontend:build && electron-packager . DevTrack --platform=win32 --arch=x64 --out=dist --overwrite --icon=desktop/assets/favicon --ignore=frontend/src --ignore=frontend/public --ignore=\\.git && node desktop/patch-exe-icon.js",
+    "desktop:pack:builder": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run frontend:build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --dir",
+    "desktop:build": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run frontend:build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
+    "desktop:dist": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run frontend:build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder"
+  },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.3",
+    "cross-env": "^7.0.3",
+    "electron": "^30.1.2",
+    "electron-builder": "^24.13.3",
+    "png-to-ico": "^3.0.1",
+    "rcedit": "^5.0.2"
+  },
+  "build": {
+    "appId": "com.devtrack.desktop",
+    "productName": "DevTrack",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "desktop/**/*",
+      "frontend/build/**/*",
+      "backend/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "desktop/assets/favicon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "DevTrack"
+    }
   }
 }

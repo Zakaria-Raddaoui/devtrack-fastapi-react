@@ -178,10 +178,19 @@ function GlobalSearch({ collapsed, onExpand }) {
 export default function Layout({ children, theme, setTheme }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isDesktop = typeof window !== 'undefined' && window.location.protocol === 'file:';
   const [collapsed, setCollapsed] = useState(true);
   const [showCapture, setShowCapture] = useState(false);
   const [showSession, setShowSession] = useState(false);
   const [sessionTopics, setSessionTopics] = useState([]);
+  const appLogo = `${process.env.PUBLIC_URL || ''}/favicon.png`;
+
+  const resolveMediaUrl = useCallback((url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const base = api.defaults.baseURL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    return `${base}${url}`;
+  }, []);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -218,7 +227,8 @@ export default function Layout({ children, theme, setTheme }) {
   }, []);
 
   return (
-    <div className="layout-root">
+    <div className={`layout-root ${isDesktop ? 'desktop-shell' : ''}`}>
+      {isDesktop && <div className="desktop-drag-strip" aria-hidden="true" />}
       <ShortcutsOverlay />
       <QuickCapture open={showCapture} onClose={() => setShowCapture(false)} />
       {showSession && <StudySession topics={sessionTopics} onClose={() => setShowSession(false)} />}
@@ -229,7 +239,7 @@ export default function Layout({ children, theme, setTheme }) {
         {/* Logo */}
         <div className="sidebar-logo">
           <div className="logo-mark">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L22 7V12C22 16.4 17.6 20.5 12 22C6.4 20.5 2 16.4 2 12V7L12 2Z" fill="#f97316" opacity="0.9" /><path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <img src={appLogo} alt="DevTrack" className="logo-icon" />
           </div>
           <span className="logo-text">DevTrack</span>
           <button
@@ -296,7 +306,13 @@ export default function Layout({ children, theme, setTheme }) {
 
           {/* User row */}
           <NavLink to="/profile" className="sb-user">
-            <div className="sb-avatar">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
+            <div className="sb-avatar">
+              {user?.profile_picture ? (
+                <img src={resolveMediaUrl(user.profile_picture)} alt="Profile" className="sb-avatar-img" />
+              ) : (
+                <span>{user?.username?.[0]?.toUpperCase() || 'U'}</span>
+              )}
+            </div>
             <div className="sb-user-info">
               <span className="sb-username">{user?.username}</span>
               <span className="sb-user-sub">View profile</span>
@@ -339,6 +355,38 @@ export default function Layout({ children, theme, setTheme }) {
         .layout-root {
           display: flex; min-height: 100vh;
           background: var(--bg); position: relative;
+        }
+
+        .desktop-drag-strip {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 34px;
+          z-index: 1200;
+          -webkit-app-region: drag;
+          background: transparent;
+          border: none;
+          pointer-events: auto;
+        }
+
+        .layout-root.desktop-shell .sidebar {
+          padding-top: 38px;
+          height: 100vh;
+          background: linear-gradient(
+            180deg,
+            var(--sidebar-bg) 0%,
+            var(--sidebar-bg) 80%,
+            rgba(59,130,246,0.05) 100%
+          );
+        }
+
+        .layout-root.desktop-shell .sidebar.collapsed {
+          padding-top: 38px;
+        }
+
+        .layout-root.desktop-shell .layout-main {
+          padding-top: 8px;
         }
 
         /* ── Sidebar shell ── */
@@ -405,14 +453,21 @@ export default function Layout({ children, theme, setTheme }) {
           display: none;
         }
         .logo-mark {
-          width: 32px; height: 32px; flex-shrink: 0;
+          width: 34px; height: 34px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
+          border-radius: 10px;
+          background: rgba(249,115,22,0.08);
+          border: 1px solid rgba(249,115,22,0.2);
         }
 
-        .logo-mark svg { width: 28px; height: 28px; }
+        .logo-icon {
+          width: 22px;
+          height: 22px;
+          object-fit: contain;
+        }
 
-        .logo-text {var(--font-heading); font-weight: 800;
-          font-size: 19px; color: var(--text); letter-spacing: -0.5px;
+        .logo-text { font-family: var(--font-heading); font-weight: 800;
+          font-size: 17px; color: var(--text); letter-spacing: -0.35px;
           transition: opacity 0.18s ease, max-width 0.22s ease;
           overflow: hidden; white-space: nowrap; max-width: 160px;
         }
@@ -442,9 +497,9 @@ export default function Layout({ children, theme, setTheme }) {
 
         .search-input {
           flex: 1; background: none; border: none; outline: none;
-          font-size: 14px; color: var(--text);
-          font-family: var(--font-body); font-weight: 500);
-          font-family: var(--font-body); min-width: 0;
+          font-size: 13px; color: var(--text);
+          font-family: var(--font-body); font-weight: 500;
+          min-width: 0;
         }
 
         .search-input::placeholder { color: var(--placeholder); }
@@ -508,7 +563,7 @@ export default function Layout({ children, theme, setTheme }) {
         .nav-item {
           display: flex; align-items: center; gap: 10px;
           padding: 9px 10px; border-radius: 8px;
-          color: var(--muted); font-size: 13.5px; font-weight: 500;
+          color: var(--muted); font-size: 12.5px; font-weight: 500;
           transition: all 0.15s; cursor: pointer; white-space: nowrap;
           overflow: hidden; text-decoration: none;
         }
@@ -555,7 +610,7 @@ export default function Layout({ children, theme, setTheme }) {
           display: flex; align-items: center; gap: 10px;
           padding: 9px 10px; border-radius: 8px;
           background: none; border: none;
-          color: var(--muted); font-size: 13.5px; font-weight: 500;
+          color: var(--muted); font-size: 12.5px; font-weight: 500;
           cursor: pointer; font-family: var(--font-body);
           transition: all 0.15s; white-space: nowrap; overflow: hidden; width: 100%;
           text-align: left;
@@ -596,6 +651,13 @@ export default function Layout({ children, theme, setTheme }) {
           color: white; display: flex; align-items: center; justify-content: center;
           font-size: 12px; font-weight: 800; flex-shrink: 0;
           font-family: var(--font-heading);
+          overflow: hidden;
+        }
+
+        .sb-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
 
         .sb-user-info {

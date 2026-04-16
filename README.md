@@ -6,15 +6,15 @@ A full-stack web application for developers who take their learning seriously. D
 
 ## Tech Stack
 
-| Layer     | Technology                                         |
-|-----------|----------------------------------------------------|
-| Frontend  | React 18, TailwindCSS, D3.js, Recharts             |
-| Backend   | FastAPI, SQLAlchemy, PostgreSQL                    |
-| AI        | Groq (Llama 3.3 70B) — free tier                  |
-| Auth      | JWT (python-jose)                                  |
-| Infra     | Docker Compose, hot reload                         |
-| PDF       | ReportLab                                          |
-| Scraping  | httpx + BeautifulSoup4                             |
+| Layer    | Technology                             |
+| -------- | -------------------------------------- |
+| Frontend | React 18, TailwindCSS, D3.js, Recharts |
+| Backend  | FastAPI, SQLAlchemy, PostgreSQL        |
+| AI       | Groq (Llama 3.3 70B) — free tier       |
+| Auth     | JWT (python-jose)                      |
+| Infra    | Docker Compose, hot reload             |
+| PDF      | ReportLab                              |
+| Scraping | httpx + BeautifulSoup4                 |
 
 ---
 
@@ -39,6 +39,7 @@ Open **http://localhost:3000**
 ### Core Learning Management
 
 **Topics — Kanban Board**
+
 - Drag & drop across To Learn / Learning / Mastered columns
 - Set goal hours and track progress with a live progress bar per card
 - Filter and sort by date or hours logged
@@ -46,6 +47,7 @@ Open **http://localhost:3000**
 - **⏱ Start Session** button on hover — launches a Study Session directly for that topic
 
 **Daily Logs — Smart List View**
+
 - Rich markdown editor with write/preview toggle
 - Cards collapse to 3 lines with gradient fade — click to expand and read full log
 - Built-in Pomodoro timer that auto-fills time spent
@@ -54,6 +56,7 @@ Open **http://localhost:3000**
 - Calendar view with heat intensity showing daily study patterns
 
 **Notes — Two-Panel Editor**
+
 - Sidebar list + full markdown editor
 - Folder organization with right-click context menu (move, duplicate, delete)
 - Auto-save with 1s debounce, Ctrl+E to toggle preview/edit
@@ -61,17 +64,20 @@ Open **http://localhost:3000**
 - **AI Auto-Tagging** — AI proposes tags from note content, hierarchical tags can merge over time (docker-compose + docker-volumes → `docker` with subtopics)
 
 **Resources — Enhanced**
+
 - Star ratings (1–5), mark as read/unread, notes per resource
 - Filter by type (article/video/course/book/docs/tool), topic, read status
 - Sort by top rated, recent, or A–Z
 - Stats bar: total, read count, avg rating
 
 **Roadmaps**
+
 - Ordered steps with checkboxes, progress ring
 - Link steps to Topics — appears in Topic Detail page
 - Collapsible right panel, completion animation
 
 **Goals**
+
 - Set learning goals with deadlines and target hours
 - Auto-calculates progress from logged hours if linked to a topic
 - Active / Completed tabs, deadline urgency colors (green → orange → red)
@@ -82,12 +88,14 @@ Open **http://localhost:3000**
 ### AI-Powered Features
 
 **AI Assistant**
+
 - Full conversation interface with Groq Llama 3.3 70B (streaming)
 - Persistent conversations stored in DB, auto-titled from first message
 - Rename/delete conversations
 - Warm personality, markdown formatting
 
 **Study Session Autopilot** (`Ctrl+Shift+S` or sidebar button)
+
 - Pick topic + duration (25 / 50 / 90 min or custom)
 - Fullscreen focus mode with animated circular countdown ring
 - Motivational message changes as timer progresses
@@ -100,6 +108,7 @@ Open **http://localhost:3000**
 - Review and edit before saving — one click creates the log
 
 **Quick Capture** (`Ctrl+Shift+V` or ⚡ sidebar button)
+
 - Paste any URL → DevTrack auto-detects type and fetches metadata:
   - **GitHub PR/Commit** — title, repo, files changed, estimated time
   - **YouTube** — video title, duration → estimates time from video length
@@ -118,7 +127,7 @@ Open **http://localhost:3000**
 
 **Confidence & Evidence Tracking** (`/confidence` page)
 
-The core insight: separating *feeling* confident from *being* confident.
+The core insight: separating _feeling_ confident from _being_ confident.
 
 - **Confidence score** (0–100): subjective, from the slider after each log session
 - **Evidence score** (0–100): objective, computed from:
@@ -150,6 +159,7 @@ An auto-built visual map of your knowledge from topic titles, notes, logs, and r
 ### Analytics & Insights
 
 **Analytics Page**
+
 - GitHub-style full-year heatmap of learning activity
 - Hours per month bar chart
 - Best days to learn (by average hours)
@@ -158,6 +168,7 @@ An auto-built visual map of your knowledge from topic titles, notes, logs, and r
 - Week-over-week comparison with trend message
 
 **Dashboard**
+
 - 6 stat cards: total hours, in progress, mastered, this week, streak, learning pace
 - Daily goal ring with today's progress
 - "Continue where you left off" card
@@ -170,6 +181,7 @@ An auto-built visual map of your knowledge from topic titles, notes, logs, and r
 ### Profile & Settings
 
 **Profile Page**
+
 - Stats overview: 8 metrics (hours, sessions, active days, topics, mastered, goals done, notes, roadmaps)
 - Edit email, bio, public/private toggle with live URL preview
 - Password change with live strength indicator (5-bar)
@@ -181,11 +193,13 @@ An auto-built visual map of your knowledge from topic titles, notes, logs, and r
 ### Navigation & UX
 
 **Sidebar** (hover to expand, auto-collapses)
+
 - Clean SVG line icon set — consistent 17×17 stroke icons
 - ⚡ Quick Capture + ⏱ Study Session buttons always accessible
 - User avatar, theme toggle, sign out in the bottom zone
 
 **Keyboard Shortcuts** (`Ctrl+/` to open overlay)
+
 ```
 Ctrl+1     Dashboard          Ctrl+6     Goals
 Ctrl+2     Topics             Ctrl+7     Resources
@@ -198,6 +212,7 @@ Ctrl+E     Toggle note preview Ctrl+S    Save note
 ```
 
 **Global Search** (`Ctrl+K`)
+
 - Searches topics, logs, resources, and notes simultaneously
 - Results with type icons and subtitles
 - Keyboard navigation
@@ -294,11 +309,68 @@ REACT_APP_API_URL=http://localhost:8000
 ## Planned / In Progress
 
 - [ ] Auto-Tagging that evolves — AI proposes hierarchical tags for notes; suggests merging `docker-compose` + `docker-volumes` → `docker` with subtopics
-- [ ] Electron desktop app (.exe) — bundle backend with PyInstaller, swap to SQLite
+- [~] Electron desktop app (.exe) — local backend + SQLite desktop mode scaffolded
 - [ ] Achievements / badges system
 - [ ] Export individual topic reports
 - [ ] Public profile improvements
 - [ ] Mobile responsive layout
+
+---
+
+## Desktop App (Phase B)
+
+DevTrack now includes a **desktop shell scaffold** using Electron.
+
+What it does today:
+
+- Starts FastAPI locally inside the desktop app
+- Uses a local **SQLite** database file instead of Docker/Postgres
+- Loads your React UI in an Electron window
+- Builds a Windows installer skeleton via `electron-builder`
+
+### Desktop prerequisites
+
+- Node.js 18+
+- Python 3.11+
+
+### Run desktop in dev mode
+
+```bash
+# from repository root
+npm install
+npm run frontend:install
+npm run backend:install
+
+# start frontend dev server in terminal A
+npm --prefix frontend start
+
+# start desktop shell in terminal B
+npm run desktop:dev
+```
+
+### Build desktop distributable (Windows)
+
+```bash
+npm run desktop:dist
+```
+
+Output is generated in `dist/`.
+
+If Windows blocks `electron-builder` with symlink privilege errors, use:
+
+```bash
+npm run desktop:pack
+```
+
+This creates a portable unpacked desktop app folder with `DevTrack.exe` in `dist/`.
+
+If you see a black window in packaged mode, rebuild with:
+
+```bash
+npm run desktop:pack
+```
+
+The desktop build now uses file-protocol-safe routing and relative static asset paths.
 
 ---
 
