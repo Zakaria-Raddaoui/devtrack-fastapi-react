@@ -69,7 +69,7 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel, dan
         }
 
         .confirm-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 18px; font-weight: 700;
           color: var(--text); margin: 0;
         }
@@ -91,7 +91,7 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel, dan
           border-radius: 10px; padding: 11px;
           font-size: 14px; font-weight: 500;
           color: var(--text); cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: all 0.2s;
         }
 
@@ -106,7 +106,7 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel, dan
           border: none; border-radius: 10px;
           padding: 11px; font-size: 14px;
           font-weight: 600; color: white;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: var(--font-body);
           transition: all 0.2s;
         }
 

@@ -755,7 +755,7 @@ export default function Logs() {
         }
 
         .page-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 28px; font-weight: 700;
           color: var(--text); letter-spacing: -0.5px;
           margin-bottom: 4px;
@@ -768,7 +768,7 @@ export default function Logs() {
           background: #f97316; color: white; border: none;
           border-radius: 10px; padding: 11px 20px;
           font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           cursor: pointer; transition: all 0.2s;
           box-shadow: 0 4px 16px rgba(249,115,22,0.3);
           white-space: nowrap;
@@ -782,7 +782,7 @@ export default function Logs() {
           background: var(--card-bg); color: var(--text);
           border: 1px solid var(--border); border-radius: 10px;
           padding: 11px 18px; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           cursor: pointer; transition: all 0.2s; white-space: nowrap;
         }
 
@@ -802,7 +802,7 @@ export default function Logs() {
           border-radius: 10px;
           padding: 10px 16px;
           font-size: 14px; color: var(--text);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
         }
@@ -827,42 +827,46 @@ export default function Logs() {
         .log-card {
           background: var(--card-bg);
           border: 1px solid var(--border);
-          border-radius: 16px;
+          border-radius: 20px;
           padding: 0;
-          transition: box-shadow 0.2s, border-color 0.2s;
+          transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
           overflow: hidden;
+          box-shadow: 0 4px 12px var(--shadow);
         }
 
         .log-card:hover {
-          box-shadow: 0 4px 24px var(--shadow);
-          border-color: color-mix(in srgb, var(--border) 60%, #f97316 40%);
+          box-shadow: 0 12px 32px var(--shadow);
+          border-color: var(--accent);
+          transform: translateY(-2px);
         }
 
         .log-card.expanded {
-          border-color: rgba(249,115,22,0.3);
+          border-color: rgba(249,115,22,0.4);
+          box-shadow: 0 16px 40px rgba(249,115,22,0.1);
         }
 
         /* Header */
         .log-header {
           display: flex; align-items: center;
           justify-content: space-between;
-          padding: 14px 20px;
+          padding: 16px 24px;
           border-bottom: 1px solid var(--border);
           gap: 12px;
           background: var(--bg);
         }
 
         .log-header-left {
-          display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;
+          display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1;
         }
 
         .log-topic-pill {
-          display: inline-flex; align-items: center; gap: 6px;
-          background: rgba(249,115,22,0.1); color: #f97316;
-          font-size: 11px; font-weight: 700;
-          padding: 4px 10px; border-radius: 99px;
-          text-transform: uppercase; letter-spacing: 0.4px;
-          border: 1px solid rgba(249,115,22,0.25);
+          display: inline-flex; align-items: center; gap: 8px;
+          background: rgba(249,115,22,0.12); color: #f97316;
+          font-size: 12px; font-weight: 800;
+          padding: 6px 14px; border-radius: 99px;
+          text-transform: uppercase; letter-spacing: 0.5px;
+          border: 1px solid rgba(249,115,22,0.2);
+          font-family: var(--font-heading);
         }
 
         .log-topic-dot {
@@ -871,22 +875,24 @@ export default function Logs() {
         }
 
         .log-date-badge {
-          font-size: 12px; font-weight: 500; color: var(--muted);
+          font-size: 13px; font-weight: 600; color: var(--muted);
         }
 
         .log-header-right {
-          display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+          display: flex; align-items: center; gap: 12px; flex-shrink: 0;
         }
 
         .log-time-pill {
-          display: inline-flex; align-items: center; gap: 5px;
-          font-size: 12px; font-weight: 700; color: var(--text);
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 14px; font-weight: 800; color: var(--text);
           background: var(--card-bg); border: 1px solid var(--border);
-          padding: 4px 10px; border-radius: 99px;
+          padding: 6px 14px; border-radius: 99px;
+          font-family: var(--font-heading);
+          box-shadow: 0 2px 8px var(--shadow);
         }
 
         .log-actions {
-          display: flex; gap: 2px;
+          display: flex; gap: 4px;
           opacity: 0; transition: opacity 0.2s;
         }
 
@@ -896,7 +902,7 @@ export default function Logs() {
         /* Notes area */
         .log-notes-wrap {
           position: relative;
-          padding: 16px 20px;
+          padding: 24px;
         }
 
         .log-notes-wrap.preview {
@@ -920,7 +926,7 @@ export default function Logs() {
           background: var(--card-bg); border: 1px solid var(--border);
           border-radius: 99px; padding: 4px 14px;
           font-size: 11px; font-weight: 600; color: #f97316;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: var(--font-body);
           transition: all 0.15s;
         }
 
@@ -937,7 +943,7 @@ export default function Logs() {
         .log-collapse-btn {
           background: none; border: none;
           font-size: 12px; font-weight: 600; color: var(--muted);
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: var(--font-body);
           padding: 4px 8px; border-radius: 6px;
           transition: all 0.15s;
         }
@@ -958,7 +964,7 @@ export default function Logs() {
           border-radius: 6px; padding: 4px 8px;
           font-size: 14px; cursor: pointer;
           transition: all 0.2s;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
         }
 
         .expand-btn { color: var(--muted); font-size: 16px; }
@@ -969,22 +975,22 @@ export default function Logs() {
         .del-btn:hover { background: var(--danger-bg); color: var(--danger-text); }
 
         .log-notes {
-          font-size: 14px; color: var(--text);
-          line-height: 1.7; margin: 0;
+          font-size: 15px; color: var(--text);
+          line-height: 1.8; margin: 0;
         }
 
         .log-notes p  { margin: 0 0 8px; }
         .log-notes p:last-child { margin-bottom: 0; }
         .log-notes h1, .log-notes h2, .log-notes h3 {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-weight: 700; color: var(--text);
           margin: 12px 0 6px;
         }
-        .log-notes h1 { font-size: 18px; }
-        .log-notes h2 { font-size: 16px; }
-        .log-notes h3 { font-size: 14px; }
+        .log-notes h1 { font-size: 22px; margin-bottom: 12px; }
+        .log-notes h2 { font-size: 18px; margin-bottom: 10px; }
+        .log-notes h3 { font-size: 16px; margin-bottom: 8px; }
         .log-notes ul, .log-notes ol {
-          padding-left: 20px; margin: 6px 0;
+          padding-left: 24px; margin: 10px 0;
         }
         .log-notes li { margin-bottom: 3px; }
         .log-notes code {
@@ -1030,7 +1036,7 @@ export default function Logs() {
           border-radius: 8px; padding: 5px 12px;
           font-size: 12px; font-weight: 500;
           color: var(--muted); cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: all 0.2s;
         }
 
@@ -1064,7 +1070,7 @@ export default function Logs() {
           border-radius: 6px; padding: 4px 12px;
           font-size: 12px; font-weight: 500;
           color: var(--muted); cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: all 0.15s;
         }
 
@@ -1109,7 +1115,7 @@ export default function Logs() {
         .md-preview p  { margin: 0 0 8px; }
         .md-preview p:last-child { margin-bottom: 0; }
         .md-preview h1, .md-preview h2, .md-preview h3 {
-          font-family: 'Syne', sans-serif; font-weight: 700;
+          font-family: var(--font-heading); font-weight: 700;
           color: var(--text); margin: 12px 0 6px;
         }
         .md-preview h1 { font-size: 20px; }
@@ -1207,7 +1213,7 @@ export default function Logs() {
           background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
           border-radius: 8px; padding: 6px 14px;
           font-size: 13px; font-weight: 600; color: #ef4444;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: var(--font-body);
           transition: all 0.15s;
         }
 
@@ -1218,7 +1224,7 @@ export default function Logs() {
           background: none; border: 1px solid var(--border);
           border-radius: 8px; padding: 6px 12px;
           font-size: 13px; color: var(--muted);
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: var(--font-body);
           transition: all 0.15s;
         }
 
@@ -1289,7 +1295,7 @@ export default function Logs() {
         }
 
         .empty-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 18px; font-weight: 700; color: var(--text);
         }
 
@@ -1308,7 +1314,7 @@ export default function Logs() {
           border-radius: 7px; padding: 7px 14px;
           font-size: 13px; font-weight: 500;
           color: var(--muted); cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: all 0.15s; white-space: nowrap;
         }
 
@@ -1337,7 +1343,7 @@ export default function Logs() {
           border-radius: 8px; padding: 6px 14px;
           font-size: 18px; color: var(--text);
           cursor: pointer; transition: all 0.15s;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           line-height: 1;
         }
 
@@ -1348,7 +1354,7 @@ export default function Logs() {
         }
 
         .cal-month {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 22px; font-weight: 700;
           color: var(--text); letter-spacing: -0.5px;
         }
@@ -1369,13 +1375,16 @@ export default function Logs() {
 
         .cal-body {
           display: grid;
-          grid-template-columns: 1fr 300px;
-          gap: 24px;
+          grid-template-columns: 1fr 340px;
+          gap: 32px;
           align-items: start;
         }
 
         .cal-grid-wrap {
-          display: flex; flex-direction: column; gap: 8px;
+          display: flex; flex-direction: column; gap: 12px;
+          background: var(--card-bg); border: 1px solid var(--border);
+          border-radius: 20px; padding: 24px;
+          box-shadow: 0 8px 24px var(--shadow);
         }
 
         .cal-day-headers {
@@ -1397,10 +1406,10 @@ export default function Logs() {
 
         .cal-cell {
           aspect-ratio: 1;
-          background: var(--card-bg);
+          background: var(--bg);
           border: 1px solid var(--border);
-          border-radius: 10px;
-          padding: 6px;
+          border-radius: 12px;
+          padding: 8px;
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
           gap: 3px; cursor: pointer;
@@ -1475,14 +1484,14 @@ export default function Logs() {
         .cal-legend-dot.i3 { background: rgba(249,115,22,0.7); }
         .cal-legend-dot.i4 { background: #f97316; }
 
-        /* Side panel */
         .cal-side {
           background: var(--card-bg);
           border: 1px solid var(--border);
-          border-radius: 16px; padding: 20px;
-          min-height: 300px;
+          border-radius: 20px; padding: 24px;
+          min-height: 400px;
           display: flex; flex-direction: column; gap: 16px;
-          position: sticky; top: 20px;
+          position: sticky; top: 24px;
+          box-shadow: 0 8px 32px var(--shadow);
         }
 
         .cal-side-empty {
@@ -1497,12 +1506,14 @@ export default function Logs() {
         .cal-side-header {
           display: flex; align-items: center;
           justify-content: space-between; gap: 8px;
+          border-bottom: 1px solid var(--border);
+          padding-bottom: 16px;
         }
 
         .cal-side-date {
-          font-family: 'Syne', sans-serif;
-          font-size: 15px; font-weight: 700;
-          color: var(--text); margin: 0;
+          font-family: var(--font-heading);
+          font-size: 20px; font-weight: 800; color: var(--text);
+          margin: 0; letter-spacing: -0.5px;
         }
 
         .cal-new-btn {
@@ -1511,22 +1522,22 @@ export default function Logs() {
           border-radius: 8px; padding: 5px 12px;
           font-size: 12px; font-weight: 600;
           color: #f97316; cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: all 0.15s;
         }
 
         .cal-new-btn:hover { background: rgba(249,115,22,0.2); }
 
         .cal-side-logs {
-          display: flex; flex-direction: column; gap: 12px;
-          overflow-y: auto; max-height: 600px;
+          display: flex; flex-direction: column; gap: 16px;
+          overflow-y: auto; max-height: 600px; padding-right: 4px;
         }
 
         .cal-log-item {
           background: var(--bg);
           border: 1px solid var(--border);
-          border-radius: 10px; padding: 14px;
-          display: flex; flex-direction: column; gap: 8px;
+          border-radius: 12px; padding: 16px;
+          display: flex; flex-direction: column; gap: 10px;
         }
 
         .cal-log-top {
@@ -1535,10 +1546,9 @@ export default function Logs() {
         }
 
         .cal-log-topic {
-          font-size: 11px; font-weight: 600;
-          background: var(--tag-bg); color: var(--tag-text);
-          padding: 2px 8px; border-radius: 99px;
-          text-transform: uppercase; letter-spacing: 0.3px;
+          font-family: var(--font-heading); font-size: 11px; font-weight: 800;
+          color: #f97316; text-transform: uppercase; letter-spacing: 0.5px;
+          background: rgba(249,115,22,0.12); padding: 4px 10px; border-radius: 99px;
         }
 
         .cal-log-actions { display: flex; gap: 4px; }
@@ -1559,7 +1569,7 @@ export default function Logs() {
           background: #f97316; color: white; border: none;
           border-radius: 8px; padding: 8px 16px;
           font-size: 13px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           cursor: pointer; transition: all 0.2s;
           box-shadow: 0 3px 10px rgba(249,115,22,0.3);
         }
@@ -1582,9 +1592,8 @@ export default function Logs() {
         .modal-card {
           background: var(--card-bg);
           border: 1px solid var(--border);
-          border-radius: 20px; padding: 32px;
-          width: 100%; max-width: 500px;
-          box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+          border-radius: 24px; padding: 36px; width: 100%; max-width: 500px;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
           animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           flex-shrink: 0;
         }
@@ -1600,7 +1609,7 @@ export default function Logs() {
         }
 
         .modal-header h2 {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 20px; font-weight: 700; color: var(--text);
         }
 
@@ -1625,7 +1634,7 @@ export default function Logs() {
           border: 1px solid var(--border);
           border-radius: 10px; padding: 11px 14px;
           font-size: 14px; color: var(--text);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           outline: none; resize: vertical;
           transition: border-color 0.2s, box-shadow 0.2s;
         }
@@ -1661,7 +1670,7 @@ export default function Logs() {
         .conf-value-badge {
           font-size: 13px; font-weight: 800;
           padding: 3px 10px; border-radius: 99px; flex-shrink: 0;
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
         }
 
         .conf-skip { font-size: 11px; color: var(--placeholder); }
@@ -1707,7 +1716,7 @@ export default function Logs() {
         .conf-clear {
           background: none; border: none; font-size: 11px;
           color: var(--placeholder); cursor: pointer;
-          font-family: 'DM Sans', sans-serif; padding: 0;
+          font-family: var(--font-body); padding: 0;
           transition: color 0.15s; align-self: flex-start;
         }
 
@@ -1717,7 +1726,7 @@ export default function Logs() {
           background: #f97316; color: white; border: none;
           border-radius: 10px; padding: 12px;
           font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           cursor: pointer; transition: all 0.2s;
           display: flex; align-items: center;
           justify-content: center; min-height: 44px;

@@ -32,7 +32,7 @@ function Ring({ progress, size = 220, stroke = 8, color = '#f97316' }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function StudySession({ topics, initialTopicId, onClose }) {
+export default function StudySession({ topics, initialTopicId, onClose, onLogSaved }) {
     // ── Stages: setup → running → done → debrief → summary → saving → saved
     const [stage, setStage] = useState('setup');
     const [topicId, setTopicId] = useState(initialTopicId || (topics[0]?.id ?? ''));
@@ -144,12 +144,13 @@ export default function StudySession({ topics, initialTopicId, onClose }) {
         setSaving(true);
         setSaveError('');
         try {
-            await api.post('/logs/', {
+            const res = await api.post('/logs/', {
                 topic_id: parseInt(topicId),
                 time_spent: actualDuration,
                 notes: editedLog,
                 date: new Date().toISOString().split('T')[0],
             });
+            if (onLogSaved) onLogSaved(res.data);
             setStage('saved');
         } catch (err) {
             setSaveError(err.response?.data?.detail || 'Failed to save log');
@@ -437,7 +438,7 @@ const SS_STYLES = `
     position: fixed; inset: 0; z-index: 10000;
     background: var(--bg);
     display: flex; align-items: center; justify-content: center;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
     animation: ssFade 0.35s ease forwards;
   }
 
@@ -451,7 +452,7 @@ const SS_STYLES = `
     background: none; border: 1px solid var(--border);
     border-radius: 8px; padding: 6px 14px;
     font-size: 13px; font-weight: 500; color: var(--muted);
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; font-family: var(--font-body);
     transition: all 0.15s; z-index: 1;
   }
 
@@ -481,7 +482,7 @@ const SS_STYLES = `
   }
 
   .ss-setup-title {
-    font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800;
+    font-family: var(--font-heading); font-size: 32px; font-weight: 800;
     color: var(--text); letter-spacing: -1px; margin: 0;
   }
 
@@ -503,7 +504,7 @@ const SS_STYLES = `
   .ss-field select {
     background: var(--input-bg); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 14px; font-size: 15px;
-    color: var(--text); font-family: 'DM Sans', sans-serif; outline: none;
+    color: var(--text); font-family: var(--font-body); outline: none;
     transition: border-color 0.2s;
   }
 
@@ -515,7 +516,7 @@ const SS_STYLES = `
     display: flex; flex-direction: column; align-items: center; gap: 3px;
     background: var(--input-bg); border: 1px solid var(--border);
     border-radius: 12px; padding: 12px 8px;
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; font-family: var(--font-body);
     transition: all 0.15s;
   }
 
@@ -540,7 +541,7 @@ const SS_STYLES = `
   .ss-custom-wrap input {
     background: var(--input-bg); border: 1px solid var(--border);
     border-radius: 10px; padding: 10px 14px; font-size: 15px;
-    color: var(--text); font-family: 'DM Sans', sans-serif; outline: none;
+    color: var(--text); font-family: var(--font-body); outline: none;
     width: 100px; transition: border-color 0.2s;
   }
 
@@ -550,7 +551,7 @@ const SS_STYLES = `
   .ss-start-btn {
     background: #f97316; color: white; border: none;
     border-radius: 12px; padding: 14px;
-    font-size: 16px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    font-size: 16px; font-weight: 700; font-family: var(--font-body);
     cursor: pointer; transition: all 0.2s;
     box-shadow: 0 6px 24px rgba(249,115,22,0.35);
     letter-spacing: -0.3px;
@@ -572,7 +573,7 @@ const SS_STYLES = `
   }
 
   .ss-focus-topic {
-    font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700;
+    font-family: var(--font-heading); font-size: 22px; font-weight: 700;
     color: #f97316; letter-spacing: -0.5px;
   }
 
@@ -587,7 +588,7 @@ const SS_STYLES = `
   }
 
   .ss-time {
-    font-family: 'Syne', sans-serif; font-size: 52px; font-weight: 800;
+    font-family: var(--font-heading); font-size: 52px; font-weight: 800;
     color: var(--text); letter-spacing: -2px; line-height: 1;
   }
 
@@ -604,7 +605,7 @@ const SS_STYLES = `
     background: var(--card-bg); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 28px;
     font-size: 15px; font-weight: 600; color: var(--text);
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; font-family: var(--font-body);
     transition: all 0.15s;
   }
 
@@ -614,7 +615,7 @@ const SS_STYLES = `
     background: none; border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 24px;
     font-size: 14px; color: var(--muted);
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; font-family: var(--font-body);
     transition: all 0.15s;
   }
 
@@ -637,7 +638,7 @@ const SS_STYLES = `
   .ss-done-icon { font-size: 72px; }
 
   .ss-done-title {
-    font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800;
+    font-family: var(--font-heading); font-size: 36px; font-weight: 800;
     color: var(--text); letter-spacing: -1px; margin: 0;
   }
 
@@ -659,7 +660,7 @@ const SS_STYLES = `
   .ss-debrief-header { display: flex; flex-direction: column; gap: 8px; }
 
   .ss-debrief-title {
-    font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800;
+    font-family: var(--font-heading); font-size: 28px; font-weight: 800;
     color: var(--text); letter-spacing: -0.5px; margin: 0;
   }
 
@@ -671,7 +672,7 @@ const SS_STYLES = `
     background: var(--card-bg); border: 1px solid var(--border);
     border-radius: 14px; padding: 16px 18px;
     font-size: 15px; color: var(--text);
-    font-family: 'DM Sans', sans-serif; outline: none; resize: vertical;
+    font-family: var(--font-body); outline: none; resize: vertical;
     line-height: 1.7; transition: border-color 0.2s, box-shadow 0.2s;
   }
 
@@ -686,7 +687,7 @@ const SS_STYLES = `
   .ss-skip-ai {
     background: none; border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 20px; font-size: 14px; color: var(--muted);
-    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.15s;
   }
 
   .ss-skip-ai:hover { border-color: var(--muted); color: var(--text); }
@@ -694,7 +695,7 @@ const SS_STYLES = `
   .ss-generate-btn {
     background: #f97316; color: white; border: none;
     border-radius: 10px; padding: 12px 24px;
-    font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 700; font-family: var(--font-body);
     cursor: pointer; transition: all 0.2s;
     box-shadow: 0 4px 16px rgba(249,115,22,0.3);
   }
@@ -737,7 +738,7 @@ const SS_STYLES = `
   }
 
   .ss-summary-title {
-    font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
+    font-family: var(--font-heading); font-size: 26px; font-weight: 800;
     color: var(--text); letter-spacing: -0.5px; margin: 0 0 2px;
   }
 
@@ -803,7 +804,7 @@ const SS_STYLES = `
   .ss-etab {
     background: none; border: none; border-radius: 7px 7px 0 0;
     padding: 6px 16px; font-size: 12px; font-weight: 500;
-    color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif;
+    color: var(--muted); cursor: pointer; font-family: var(--font-body);
     transition: all 0.15s;
   }
 
@@ -845,7 +846,7 @@ const SS_STYLES = `
   .ss-discard-btn {
     background: none; border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 20px; font-size: 14px; color: var(--muted);
-    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    cursor: pointer; font-family: var(--font-body); transition: all 0.15s;
   }
 
   .ss-discard-btn:hover { border-color: var(--muted); color: var(--text); }
@@ -853,7 +854,7 @@ const SS_STYLES = `
   .ss-save-btn {
     background: #22c55e; color: white; border: none;
     border-radius: 10px; padding: 12px 28px;
-    font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 700; font-family: var(--font-body);
     cursor: pointer; transition: all 0.2s;
     box-shadow: 0 4px 16px rgba(34,197,94,0.3);
     display: flex; align-items: center; gap: 8px; min-width: 140px;

@@ -409,7 +409,7 @@ export default function TopicDetail() {
           background: none; border: none;
           color: var(--muted); cursor: pointer;
           font-size: 14px; font-weight: 500;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           padding: 0; margin-bottom: 24px;
           transition: color 0.15s; display: block;
         }
@@ -440,8 +440,7 @@ export default function TopicDetail() {
         .td-badges { display: flex; gap: 8px; flex-wrap: wrap; }
 
         .td-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 32px; font-weight: 800;
+          font-family: var(--font-heading); font-size: 36px; letter-spacing: -1px; font-weight: 800; font-weight: 800;
           color: var(--text); letter-spacing: -1px; margin: 0;
         }
 
@@ -470,7 +469,7 @@ export default function TopicDetail() {
         .td-card {
           background: var(--card-bg);
           border: 1px solid var(--border);
-          border-radius: 16px; padding: 24px;
+          border-radius: 20px; padding: 24px; box-shadow: 0 12px 32px var(--shadow); transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
           display: flex; flex-direction: column; gap: 16px;
         }
 
@@ -480,7 +479,7 @@ export default function TopicDetail() {
         }
 
         .td-section-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 16px; font-weight: 700;
           color: var(--text); margin: 0;
           display: flex; align-items: center; gap: 8px;
@@ -536,7 +535,7 @@ export default function TopicDetail() {
           border-radius: 6px; padding: 3px 7px;
           font-size: 12px; cursor: pointer;
           transition: all 0.2s; color: var(--muted);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
         }
 
         .td-icon-btn.del:hover { background: var(--danger-bg); color: var(--danger-text); }
@@ -549,7 +548,7 @@ export default function TopicDetail() {
         .td-log-notes p { margin: 0 0 6px; }
         .td-log-notes p:last-child { margin: 0; }
         .td-log-notes h1, .td-log-notes h2, .td-log-notes h3 {
-          font-family: 'Syne', sans-serif; font-weight: 700;
+          font-family: var(--font-heading); font-weight: 700;
           color: var(--text); margin: 8px 0 4px;
         }
         .td-log-notes code {
@@ -569,7 +568,7 @@ export default function TopicDetail() {
           background: none; border: none;
           font-size: 12px; font-weight: 600;
           color: #f97316; cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           padding: 0; transition: opacity 0.2s;
           align-self: flex-start;
         }
@@ -677,7 +676,7 @@ export default function TopicDetail() {
         }
 
         .td-stats-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 13px; font-weight: 700;
           color: var(--muted); text-transform: uppercase;
           letter-spacing: 0.5px; margin: 0;
@@ -693,7 +692,7 @@ export default function TopicDetail() {
         }
 
         .td-stat-val {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 24px; font-weight: 700;
           letter-spacing: -0.5px; line-height: 1;
         }

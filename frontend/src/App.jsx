@@ -11,6 +11,7 @@ import Logs from './pages/Logs';
 import Notes from './pages/Notes';
 import Roadmaps from './pages/Roadmaps';
 import Goals from './pages/Goals';
+import Todos from './pages/Todos';
 import Resources from './pages/Resources';
 import Analytics from './pages/Analytics';
 import Assistant from './pages/Assistant';
@@ -45,6 +46,7 @@ function AppRoutes() {
       <Route path="/notes" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Notes /></ProtectedRoute>} />
       <Route path="/roadmaps" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Roadmaps /></ProtectedRoute>} />
       <Route path="/goals" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Goals /></ProtectedRoute>} />
+      <Route path="/todos" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Todos /></ProtectedRoute>} />
       <Route path="/resources" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Resources /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Analytics /></ProtectedRoute>} />
       <Route path="/assistant" element={<ProtectedRoute theme={theme} setTheme={setTheme}><Assistant /></ProtectedRoute>} />

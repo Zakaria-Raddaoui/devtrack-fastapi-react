@@ -1,6 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&display=swap");
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -8,14 +10,14 @@
 
 :root {
   /* Light theme */
-  --bg: #f5f4f0;
+  --bg: #f8f9fa;
   --card-bg: #ffffff;
   --sidebar-bg: #ffffff;
   --border: rgba(0, 0, 0, 0.08);
-  --text: #111111;
+  --text: #1a1a1a;
   --muted: #6b7280;
   --placeholder: #9ca3af;
-  --input-bg: #f9f9f7;
+  --input-bg: #f3f4f6;
   --shadow: rgba(0, 0, 0, 0.08);
   --grid-line: rgba(0, 0, 0, 0.06);
   --hover-bg: rgba(249, 115, 22, 0.06);
@@ -25,17 +27,19 @@
   --success-text: #15803d;
   --danger-bg: rgba(239, 68, 68, 0.1);
   --danger-text: #dc2626;
+  --font-heading: "Syne", sans-serif;
+  --font-body: "Outfit", sans-serif;
 }
 
 [data-theme="dark"] {
-  --bg: #0f0f0f;
-  --card-bg: #1a1a1a;
-  --sidebar-bg: #141414;
+  --bg: #0f1115;
+  --card-bg: #1c1e24;
+  --sidebar-bg: #16181d;
   --border: rgba(255, 255, 255, 0.08);
-  --text: #f0ede8;
-  --muted: #888580;
-  --placeholder: #555250;
-  --input-bg: #222222;
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --placeholder: #6b7280;
+  --input-bg: #272a30;
   --shadow: rgba(0, 0, 0, 0.4);
   --grid-line: rgba(255, 255, 255, 0.04);
   --hover-bg: rgba(249, 115, 22, 0.08);
@@ -48,17 +52,35 @@
 }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
-  transition: background 0.3s, color 0.3s;
+  transition:
+    background 0.3s,
+    color 0.3s;
   -webkit-font-smoothing: antialiased;
 }
 
-a { text-decoration: none; color: inherit; }
-button { font-family: inherit; }
-input, textarea, select { font-family: inherit; }
+a {
+  text-decoration: none;
+  color: inherit;
+}
+button {
+  font-family: inherit;
+}
+input,
+textarea,
+select {
+  font-family: inherit;
+}
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}

@@ -18,6 +18,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     bio: Optional[str] = None
     is_public: Optional[bool] = None
+    profile_picture: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -26,6 +27,7 @@ class UserResponse(BaseModel):
     email: str
     bio: Optional[str]
     is_public: bool
+    profile_picture: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -206,6 +208,7 @@ class PublicTopicResponse(BaseModel):
 class PublicProfileResponse(BaseModel):
     username: str
     bio: Optional[str]
+    profile_picture: Optional[str] = None
     total_hours: float
     topics_mastered: int
     topics_in_progress: int

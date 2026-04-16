@@ -15,6 +15,8 @@ const SHORTCUTS = [
             { keys: ['Ctrl', '8'], desc: 'Go to Analytics' },
             { keys: ['Ctrl', '9'], desc: 'Go to AI Assistant' },
             { keys: ['Ctrl', '0'], desc: 'Knowledge Graph' },
+            { keys: ['Alt', 'C'], desc: 'Go to Confidence' },
+            { keys: ['Alt', 'T'], desc: 'Go to To-do (Goals)' },
         ],
     },
     {
@@ -42,7 +44,13 @@ export default function ShortcutsOverlay() {
     useEffect(() => {
         const handler = (e) => {
             // Ctrl+/ to open shortcuts
-            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+            const isShortcutToggle = (e.ctrlKey || e.metaKey) && (
+                e.key === '/' ||
+                e.key === '?' ||
+                e.code === 'Slash'
+            );
+
+            if (isShortcutToggle) {
                 e.preventDefault();
                 setOpen(o => !o);
                 return;

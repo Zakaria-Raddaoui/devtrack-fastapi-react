@@ -13,6 +13,7 @@ const NAV = [
   { to: '/notes', icon: <IcoNotes />, label: 'Notes' },
   { to: '/roadmaps', icon: <IcoRoadmaps />, label: 'Roadmaps' },
   { to: '/goals', icon: <IcoGoals />, label: 'Goals' },
+  { to: '/todos', icon: <IcoTodos />, label: 'To-do' },
   { to: '/resources', icon: <IcoResources />, label: 'Resources' },
   { to: '/analytics', icon: <IcoAnalytics />, label: 'Analytics' },
   { to: '/confidence', icon: <IcoConfidence />, label: 'Confidence' },
@@ -42,6 +43,9 @@ function IcoRoadmaps() {
 }
 function IcoGoals() {
   return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10" r="8" /><circle cx="10" cy="10" r="4" /><circle cx="10" cy="10" r="1" fill="currentColor" /></svg>;
+}
+function IcoTodos() {
+  return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="14" height="14" rx="2" /><polyline points="6,7 7.5,8.5 10,6" /><line x1="11" y1="7" x2="14" y2="7" /><polyline points="6,11 7.5,12.5 10,10" /><line x1="11" y1="11" x2="14" y2="11" /></svg>;
 }
 function IcoResources() {
   return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4a1 1 0 011-1h5l2 2h5a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" /></svg>;
@@ -192,6 +196,8 @@ export default function Layout({ children, theme, setTheme }) {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
       if (e.shiftKey && e.key === 'V') { e.preventDefault(); setShowCapture(s => !s); return; }
       if (e.shiftKey && e.key === 'S') { e.preventDefault(); openStudySession(); return; }
+      if (e.altKey && e.key.toLowerCase() === 'c') { e.preventDefault(); navigate('/confidence'); return; }
+      if (e.altKey && e.key.toLowerCase() === 't') { e.preventDefault(); navigate('/goals'); return; }
       const route = ROUTES[e.key];
       if (route && !e.shiftKey) { e.preventDefault(); navigate(route); }
     };
@@ -200,7 +206,10 @@ export default function Layout({ children, theme, setTheme }) {
   }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openSidebar = useCallback(() => setCollapsed(false), []);
-  const closeSidebar = useCallback(() => setCollapsed(true), []);
+
+  const toggleSidebar = useCallback(() => {
+    setCollapsed(prev => !prev);
+  }, []);
 
   const openStudySession = useCallback(async () => {
     try { const res = await api.get('/topics/?limit=100'); setSessionTopics(res.data); }
@@ -214,12 +223,8 @@ export default function Layout({ children, theme, setTheme }) {
       <QuickCapture open={showCapture} onClose={() => setShowCapture(false)} />
       {showSession && <StudySession topics={sessionTopics} onClose={() => setShowSession(false)} />}
 
-      <div className="sidebar-hover-strip" onMouseEnter={openSidebar} aria-hidden="true" />
-
       <aside
         className={`sidebar ${collapsed ? 'collapsed' : ''}`}
-        onMouseEnter={openSidebar}
-        onMouseLeave={closeSidebar}
       >
         {/* Logo */}
         <div className="sidebar-logo">
@@ -227,6 +232,24 @@ export default function Layout({ children, theme, setTheme }) {
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L22 7V12C22 16.4 17.6 20.5 12 22C6.4 20.5 2 16.4 2 12V7L12 2Z" fill="#f97316" opacity="0.9" /><path d="M8 12l2.5 2.5L16 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </div>
           <span className="logo-text">DevTrack</span>
+          <button
+            className={`sb-collapse-toggle ${collapsed ? '' : 'open'}`}
+            onClick={toggleSidebar}
+            aria-label={collapsed ? 'Open sidebar' : 'Close sidebar'}
+            title={collapsed ? 'Open sidebar' : 'Close sidebar'}
+          >
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              {collapsed ? (
+                <>
+                  <polyline points="7,4 13,10 7,16" />
+                </>
+              ) : (
+                <>
+                  <polyline points="13,4 7,10 13,16" />
+                </>
+              )}
+            </svg>
+          </button>
         </div>
 
         {/* Search */}
@@ -285,6 +308,7 @@ export default function Layout({ children, theme, setTheme }) {
             <button
               className="sb-icon-action"
               onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
             >
               {theme === 'dark' ? (
@@ -295,7 +319,7 @@ export default function Layout({ children, theme, setTheme }) {
               <span className="nav-label sb-footer-label">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
             </button>
 
-            <button className="sb-icon-action danger" onClick={handleLogout} title="Sign out">
+            <button className="sb-icon-action danger" onClick={handleLogout} aria-label="Sign out" title="Sign out">
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="sb-ico"><path d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3M13 14l4-4-4-4M17 10H7" /></svg>
               <span className="nav-label sb-footer-label">Sign out</span>
             </button>
@@ -317,11 +341,6 @@ export default function Layout({ children, theme, setTheme }) {
           background: var(--bg); position: relative;
         }
 
-        .sidebar-hover-strip {
-          position: fixed; left: 0; top: 0; height: 100vh;
-          width: 8px; z-index: 9998; background: transparent;
-        }
-
         /* ── Sidebar shell ── */
         .sidebar {
           width: 248px; height: 100vh;
@@ -329,22 +348,62 @@ export default function Layout({ children, theme, setTheme }) {
           border-right: 1px solid var(--border);
           display: flex; flex-direction: column;
           padding: 20px 12px 16px;
-          position: fixed; top: 0; left: 0;
+          position: sticky; top: 0; left: 0;
           overflow: hidden; flex-shrink: 0;
-          transition: width 0.22s cubic-bezier(0.16,1,0.3,1),
-                      padding 0.22s cubic-bezier(0.16,1,0.3,1);
-          z-index: 9999;
+          transition: width 0.3s cubic-bezier(0.16,1,0.3,1),
+                      padding 0.3s cubic-bezier(0.16,1,0.3,1);
+          z-index: 100;
         }
 
-        .sidebar.collapsed { width: 60px; padding: 20px 10px 16px; }
+        .sidebar.collapsed { width: 72px; padding: 20px 14px 16px; }
 
         /* ── Logo ── */
         .sidebar-logo {
           display: flex; align-items: center; gap: 10px;
-          padding: 0 6px 0 2px; margin-bottom: 16px; flex-shrink: 0;
-          overflow: hidden; white-space: nowrap;
+          padding: 0 6px 0 2px; margin-bottom: 24px; flex-shrink: 0;
+          white-space: nowrap; position: relative;
         }
 
+        .sidebar.collapsed .sidebar-logo {
+          flex-direction: column; 
+          align-items: center;
+          padding: 0;
+          gap: 16px;
+        }
+
+        .sb-collapse-toggle {
+          margin-left: auto;
+          width: 28px; height: 28px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; border: 1px solid var(--border);
+          background: var(--input-bg); color: var(--muted);
+          cursor: pointer; transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+          flex-shrink: 0;
+        }
+
+        .sidebar.collapsed .sb-collapse-toggle {
+          margin-left: 0;
+          width: 36px; height: 36px;
+          border-radius: 10px;
+        }
+
+        .sb-collapse-toggle svg { width: 14px; height: 14px; }
+
+        .sb-collapse-toggle:hover {
+          color: #f97316;
+          border-color: rgba(249,115,22,0.45);
+          background: rgba(249,115,22,0.06);
+          transform: scale(1.05);
+        }
+
+        .sb-collapse-toggle.open {
+          color: #f97316;
+          border-color: rgba(249,115,22,0.35);
+        }
+
+        .sidebar.collapsed .logo-text {
+          display: none;
+        }
         .logo-mark {
           width: 32px; height: 32px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
@@ -352,9 +411,8 @@ export default function Layout({ children, theme, setTheme }) {
 
         .logo-mark svg { width: 28px; height: 28px; }
 
-        .logo-text {
-          font-family: 'Syne', sans-serif; font-weight: 800;
-          font-size: 17px; color: var(--text); letter-spacing: -0.5px;
+        .logo-text {var(--font-heading); font-weight: 800;
+          font-size: 19px; color: var(--text); letter-spacing: -0.5px;
           transition: opacity 0.18s ease, max-width 0.22s ease;
           overflow: hidden; white-space: nowrap; max-width: 160px;
         }
@@ -362,29 +420,31 @@ export default function Layout({ children, theme, setTheme }) {
         .sidebar.collapsed .logo-text { opacity: 0; max-width: 0; pointer-events: none; }
 
         /* ── Search ── */
-        .search-wrap { position: relative; margin: 0 0 10px; }
+        .search-wrap { position: relative; margin: 0 0 16px; }
 
         .search-input-wrap {
-          display: flex; align-items: center; gap: 7px;
-          background: var(--input-bg); border: 1px solid var(--border);
-          border-radius: 9px; padding: 8px 10px;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          display: flex; align-items: center; gap: 8px;
+          background: var(--input-bg); border: 1px solid transparent;
+          border-radius: 10px; padding: 10px 12px;
+          transition: all 0.2s ease;
         }
 
         .search-wrap:focus-within .search-input-wrap {
-          border-color: #f97316; box-shadow: 0 0 0 2px rgba(249,115,22,0.15);
+          border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+          background: var(--card-bg);
         }
 
         .sb-ico {
-          width: 16px; height: 16px; flex-shrink: 0;
+          width: 18px; height: 18px; flex-shrink: 0;
         }
 
         .search-ico { color: var(--muted); }
 
         .search-input {
           flex: 1; background: none; border: none; outline: none;
-          font-size: 13px; color: var(--text);
-          font-family: 'DM Sans', sans-serif; min-width: 0;
+          font-size: 14px; color: var(--text);
+          font-family: var(--font-body); font-weight: 500);
+          font-family: var(--font-body); min-width: 0;
         }
 
         .search-input::placeholder { color: var(--placeholder); }
@@ -428,7 +488,7 @@ export default function Layout({ children, theme, setTheme }) {
           display: flex; align-items: center; gap: 10px; width: 100%;
           background: none; border: none; border-bottom: 1px solid var(--border);
           padding: 9px 12px; cursor: pointer; text-align: left;
-          transition: background 0.12s; font-family: 'DM Sans', sans-serif;
+          transition: background 0.12s; font-family: var(--font-body);
         }
 
         .search-result:last-child { border-bottom: none; }
@@ -496,7 +556,7 @@ export default function Layout({ children, theme, setTheme }) {
           padding: 9px 10px; border-radius: 8px;
           background: none; border: none;
           color: var(--muted); font-size: 13.5px; font-weight: 500;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: var(--font-body);
           transition: all 0.15s; white-space: nowrap; overflow: hidden; width: 100%;
           text-align: left;
         }
@@ -535,7 +595,7 @@ export default function Layout({ children, theme, setTheme }) {
           background: linear-gradient(135deg, #f97316, #fb923c);
           color: white; display: flex; align-items: center; justify-content: center;
           font-size: 12px; font-weight: 800; flex-shrink: 0;
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
         }
 
         .sb-user-info {
@@ -557,15 +617,15 @@ export default function Layout({ children, theme, setTheme }) {
 
         /* Footer row */
         .sb-footer-row {
-          display: flex; align-items: center; gap: 0;
+          display: flex; align-items: center; gap: 4px;
         }
 
         .sb-icon-action {
           display: flex; align-items: center; gap: 10px;
-          flex: 1; padding: 8px 10px; border-radius: 8px;
+          flex: 1; min-height: 34px; padding: 8px 10px; border-radius: 8px;
           background: none; border: none;
           color: var(--muted); font-size: 13px; font-weight: 500;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; font-family: var(--font-body);
           transition: all 0.15s; white-space: nowrap; overflow: hidden;
           text-align: left;
         }
@@ -579,10 +639,28 @@ export default function Layout({ children, theme, setTheme }) {
           font-size: 13px !important;
         }
 
+        .sidebar.collapsed .sb-footer-row {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 4px;
+        }
+
+        .sidebar.collapsed .sb-icon-action {
+          justify-content: center;
+          flex: none;
+          width: 100%;
+          padding: 8px;
+        }
+
         /* Shortcut hint */
         .sb-shortcut-hint {
           display: flex; align-items: center; gap: 8px;
           padding: 6px 10px; opacity: 0.4; margin-top: 2px;
+        }
+
+        .sidebar.collapsed .sb-shortcut-hint {
+          justify-content: center;
+          padding: 6px 0;
         }
 
         .sb-shortcut-hint kbd {
@@ -590,7 +668,7 @@ export default function Layout({ children, theme, setTheme }) {
           background: var(--bg); border: 1px solid var(--border);
           border-bottom: 2px solid var(--border); border-radius: 4px;
           padding: 1px 6px; font-size: 10px; font-weight: 700;
-          color: var(--muted); font-family: 'DM Sans', sans-serif; flex-shrink: 0;
+          color: var(--muted); font-family: var(--font-body); flex-shrink: 0;
         }
 
         .sb-shortcut-hint .nav-label { font-size: 11px !important; color: var(--muted); }

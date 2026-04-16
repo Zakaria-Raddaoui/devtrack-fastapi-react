@@ -229,6 +229,8 @@ export default function Goals() {
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(null);
     const [tab, setTab] = useState('active'); // 'active' | 'completed'
+    const [sortBy, setSortBy] = useState('deadline'); // 'deadline' | 'progress' | 'recent'
+    const [filterTopic, setFilterTopic] = useState('all'); // topic_id or 'all'
 
     const fetchData = useCallback(async () => {
         try {
@@ -260,7 +262,30 @@ export default function Goals() {
 
     const active = goals.filter(g => !g.is_completed);
     const completed = goals.filter(g => g.is_completed);
-    const shown = tab === 'active' ? active : completed;
+
+    // Base list on tab
+    let shown = tab === 'active' ? active : completed;
+
+    // Apply Topic filter
+    if (filterTopic !== 'all') {
+        shown = shown.filter(g => g.topic_id === parseInt(filterTopic));
+    }
+
+    // Apply Sort
+    shown = [...shown].sort((a, b) => {
+        if (sortBy === 'deadline') {
+            if (!a.target_date) return 1;
+            if (!b.target_date) return -1;
+            return new Date(a.target_date) - new Date(b.target_date);
+        }
+        if (sortBy === 'progress') {
+            const pctA = a.target_hours ? (a.logged_hours / a.target_hours) : 0;
+            const pctB = b.target_hours ? (b.logged_hours / b.target_hours) : 0;
+            return pctB - pctA; // descending
+        }
+        // recent
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
 
     // Stats
     const overdue = active.filter(g => {
@@ -289,9 +314,20 @@ export default function Goals() {
                         {overdue > 0 && <span className="gl-overdue-badge">{overdue} overdue</span>}
                     </p>
                 </div>
-                <button className="gl-primary-btn" onClick={() => setModal({})}>
-                    <span>+</span> New goal
-                </button>
+                <div className="gl-header-actions">
+                    <select className="gl-filter-select" value={filterTopic} onChange={e => setFilterTopic(e.target.value)}>
+                        <option value="all">All topics</option>
+                        {topics.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                    </select>
+                    <select className="gl-filter-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                        <option value="deadline">Sort by Deadline</option>
+                        <option value="progress">Sort by Progress</option>
+                        <option value="recent">Sort by Recently Added</option>
+                    </select>
+                    <button className="gl-primary-btn" onClick={() => setModal({})}>
+                        <span>+</span> New goal
+                    </button>
+                </div>
             </div>
 
             {/* Summary bar */}
@@ -377,7 +413,7 @@ export default function Goals() {
 
             <style>{`
         .gl-root {
-          padding: 40px 44px; width: 100%; box-sizing: border-box;
+          padding: 32px 40px; width: 100%; box-sizing: border-box;
           display: flex; flex-direction: column; gap: 20px;
           animation: glFade 0.4s ease forwards;
         }
@@ -392,7 +428,7 @@ export default function Goals() {
         }
 
         .gl-ring {
-          width:36px; height:36px; border:3px solid var(--border);
+          width:32px; height:32px; border:3px solid var(--border);
           border-top-color:#f97316; border-radius:50%;
           animation:glSpin 0.8s linear infinite;
         }
@@ -405,12 +441,26 @@ export default function Goals() {
           justify-content:space-between; gap:16px; flex-wrap:wrap;
         }
 
-        .gl-title {
-          font-family:'Syne',sans-serif; font-size:28px; font-weight:700;
-          color:var(--text); letter-spacing:-0.5px; margin:0 0 4px;
+        .gl-header-actions {
+          display:flex; gap:10px; align-items:center; flex-wrap:wrap;
         }
 
-        .gl-sub { font-size:14px; color:var(--muted); margin:0; display:flex; align-items:center; gap:8px; }
+        .gl-filter-select {
+          background:var(--card-bg); border:1px solid var(--border);
+          border-radius:10px; padding:10px 14px;
+          font-size:13px; color:var(--text); font-weight:500;
+          font-family:var(--font-body); outline:none;
+          transition: border-color 0.2s; box-shadow:0 2px 8px var(--shadow);
+        }
+
+        .gl-filter-select:focus { border-color:#f97316; }
+
+        .gl-title {
+          font-family:var(--font-heading); font-size:24px; font-weight:800;
+          color:var(--text); letter-spacing:-0.5px; margin:0 0 6px;
+        }
+
+        .gl-sub { font-size:13px; color:var(--muted); margin:0; display:flex; align-items:center; gap:8px; font-weight:500; }
 
         .gl-overdue-badge {
           font-size:11px; font-weight:700;
@@ -421,93 +471,93 @@ export default function Goals() {
         .gl-primary-btn {
           display:flex; align-items:center; gap:8px;
           background:#f97316; color:white; border:none;
-          border-radius:10px; padding:11px 20px;
-          font-size:14px; font-weight:600;
-          font-family:'DM Sans',sans-serif; cursor:pointer;
-          transition:all 0.2s; box-shadow:0 4px 16px rgba(249,115,22,0.3);
+          border-radius:10px; padding:10px 18px;
+          font-size:14px; font-weight:700;
+          font-family:var(--font-heading); cursor:pointer;
+          transition:all 0.2s cubic-bezier(0.16,1,0.3,1); box-shadow:0 4px 14px rgba(249,115,22,0.3);
           white-space:nowrap;
         }
 
-        .gl-primary-btn span { font-size:18px; line-height:1; }
-        .gl-primary-btn:hover { background:#ea6c0a; transform:translateY(-1px); }
+        .gl-primary-btn span { font-size:16px; line-height:1; }
+        .gl-primary-btn:hover { background:#ea6c0a; transform:translateY(-2px); box-shadow:0 6px 18px rgba(249,115,22,0.4); }
 
         /* Summary bar */
         .gl-summary-bar {
           display:flex; align-items:center;
           background:var(--card-bg); border:1px solid var(--border);
-          border-radius:14px; padding:16px 28px; gap:0;
+          border-radius:16px; padding:16px 24px; gap:0; box-shadow:0 4px 16px var(--shadow);
         }
 
         .gl-summary-stat {
-          display:flex; flex-direction:column; gap:3px;
+          display:flex; flex-direction:column; gap:4px;
           flex:1; align-items:center;
         }
 
         .gl-summary-val {
-          font-family:'Syne',sans-serif; font-size:26px; font-weight:800;
+          font-family:var(--font-heading); font-size:24px; font-weight:800;
           letter-spacing:-0.5px; line-height:1;
         }
 
         .gl-summary-label {
-          font-size:11px; color:var(--muted);
+          font-size:11px; color:var(--muted); font-weight:700; font-family:var(--font-heading);
           text-transform:uppercase; letter-spacing:0.5px;
         }
 
         .gl-summary-divider {
-          width:1px; height:36px; background:var(--border);
+          width:1px; height:32px; background:var(--border);
           flex-shrink:0; margin:0 8px;
         }
 
         /* Tabs */
         .gl-tabs {
-          display:flex; gap:4px;
-          border-bottom:1px solid var(--border); padding-bottom:0;
+          display:flex; gap:6px; background:var(--bg); border:1px solid var(--border);
+          border-radius:12px; padding:4px; margin-bottom:4px; align-self:flex-start;
+          box-shadow:inset 0 1px 3px rgba(0,0,0,0.02);
         }
 
         .gl-tab {
           display:flex; align-items:center; gap:8px;
-          background:none; border:none;
-          padding:10px 20px 12px; font-size:14px; font-weight:500;
+          background:none; border:none; border-radius:8px;
+          padding:8px 14px; font-size:13px; font-weight:600;
           color:var(--muted); cursor:pointer;
-          font-family:'DM Sans',sans-serif; transition:all 0.15s;
-          border-bottom:2px solid transparent; margin-bottom:-1px;
+          font-family:var(--font-body); transition:all 0.2s;
         }
 
         .gl-tab:hover { color:var(--text); }
 
         .gl-tab.active {
-          color:#f97316; font-weight:600;
-          border-bottom-color:#f97316;
+          background:var(--card-bg); color:var(--text); box-shadow:0 2px 8px var(--shadow);
+          color:#f97316; font-weight:700;
         }
 
         .gl-tab-count {
           font-size:11px; font-weight:700;
           background:var(--bg); color:var(--muted);
-          padding:1px 7px; border-radius:99px;
+          padding:2px 8px; border-radius:99px;
           border:1px solid var(--border);
         }
 
         .gl-tab.active .gl-tab-count {
           background:rgba(249,115,22,0.12);
-          color:#f97316; border-color:rgba(249,115,22,0.3);
+          color:#f97316; border-color:rgba(249,115,22,0.25);
         }
 
         /* Grid */
         .gl-grid {
-          display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr));
+          display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr));
           gap:16px;
         }
 
         /* Goal card */
         .gl-card {
           background:var(--card-bg); border:1px solid var(--border);
-          border-radius:16px; padding:22px;
+          border-radius:20px; padding:20px;
           display:flex; flex-direction:column; gap:12px;
-          transition:transform 0.2s, box-shadow 0.2s;
+          transition:transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s cubic-bezier(0.16,1,0.3,1); box-shadow:0 4px 12px var(--shadow);
         }
 
-        .gl-card:hover { transform:translateY(-2px); box-shadow:0 8px 28px var(--shadow); }
-        .gl-card.completed { opacity:0.7; }
+        .gl-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px var(--shadow); border-color:rgba(249,115,22,0.25); }
+        .gl-card.completed { opacity:0.8; }
 
         .gl-card-top {
           display:flex; align-items:flex-start;
@@ -519,10 +569,10 @@ export default function Goals() {
         }
 
         .gl-check {
-          width:22px; height:22px; border-radius:50%;
+          width:20px; height:20px; border-radius:50%;
           border:2px solid var(--border); background:none;
           cursor:pointer; display:flex; align-items:center;
-          justify-content:center; font-size:12px; color:white;
+          justify-content:center; font-size:11px; color:white; font-weight:800;
           transition:all 0.2s; flex-shrink:0;
         }
 
@@ -536,7 +586,7 @@ export default function Goals() {
         }
 
         .gl-card-title {
-          font-family:'Syne',sans-serif; font-size:16px; font-weight:700;
+          font-family:var(--font-heading); font-size:16px; font-weight:800;
           color:var(--text); margin:0; letter-spacing:-0.3px;
         }
 
@@ -545,22 +595,22 @@ export default function Goals() {
         .gl-card-actions { display:flex; gap:4px; flex-shrink:0; }
 
         .gl-icon-btn {
-          background:none; border:none; border-radius:6px;
-          padding:4px 7px; font-size:13px; color:var(--muted);
-          cursor:pointer; transition:all 0.15s;
+          background:none; border:1px solid transparent; border-radius:8px;
+          padding:6px; font-size:13px; color:var(--muted);
+          cursor:pointer; transition:all 0.15s; font-family:var(--font-body);
         }
 
-        .gl-icon-btn:hover { background:var(--hover-bg); color:#f97316; }
-        .gl-icon-btn.del:hover { background:var(--danger-bg); color:var(--danger-text); }
+        .gl-icon-btn:hover { background:var(--bg); border-color:var(--border); color:var(--text); }
+        .gl-icon-btn.del:hover { background:var(--danger-bg); border-color:var(--danger-border); color:var(--danger-text); }
 
         .gl-card-desc {
-          font-size:13px; color:var(--muted); line-height:1.5; margin:0;
+          font-size:13px; color:var(--muted); line-height:1.5; margin:0; font-weight:500;
         }
 
         .gl-topic-badge {
           display:inline-flex; align-items:center; gap:6px;
-          font-size:12px; font-weight:600;
-          background:var(--tag-bg); color:var(--tag-text);
+          font-size:11px; font-weight:700;
+          background:var(--bg); border:1px solid var(--border); color:var(--text);
           padding:4px 10px; border-radius:99px;
           align-self:flex-start;
         }
@@ -570,15 +620,15 @@ export default function Goals() {
         }
 
         /* Progress */
-        .gl-progress-wrap { display:flex; flex-direction:column; gap:5px; }
+        .gl-progress-wrap { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
 
         .gl-progress-bg {
-          height:7px; border-radius:99px; background:var(--border); overflow:hidden;
+          height:8px; border-radius:99px; background:var(--bg); border:1px solid var(--border); overflow:hidden;
         }
 
         .gl-progress-fill {
           height:100%; border-radius:99px;
-          transition:width 0.5s cubic-bezier(0.16,1,0.3,1);
+          transition:width 0.5s cubic-bezier(0.16,1,0.3,1); box-shadow:inset 0 1px 3px rgba(255,255,255,0.2);
         }
 
         .gl-progress-meta { display:flex; justify-content:space-between; }
@@ -586,43 +636,43 @@ export default function Goals() {
         /* Footer */
         .gl-card-footer {
           display:flex; align-items:center; justify-content:space-between;
-          padding-top:10px; border-top:1px solid var(--border);
+          padding-top:12px; border-top:1px solid var(--border); margin-top:4px;
         }
 
-        .gl-created { font-size:11px; color:var(--placeholder); }
+        .gl-created { font-size:12px; color:var(--placeholder); font-weight:600; }
 
-        .gl-deadline { font-size:12px; font-weight:600; }
+        .gl-deadline { font-size:12px; font-weight:700; font-family:var(--font-body); }
 
         /* Empty */
         .gl-empty {
           display:flex; flex-direction:column;
           align-items:center; justify-content:center;
-          gap:12px; text-align:center; padding:80px 20px;
+          gap:16px; text-align:center; padding:80px 20px;
         }
 
-        .gl-empty-icon { font-size:48px; }
+        .gl-empty-icon { font-size:48px; color:var(--border); }
         .gl-empty-title {
-          font-family:'Syne',sans-serif; font-size:20px; font-weight:700; color:var(--text);
+          font-family:var(--font-heading); font-size:22px; font-weight:800; color:var(--text); margin:0; letter-spacing:-0.5px;
         }
-        .gl-empty-sub { font-size:14px; color:var(--muted); margin-bottom:8px; }
+        .gl-empty-sub { font-size:14px; color:var(--muted); margin:0 0 8px; font-weight:500; }
 
         /* Modal */
         .gl-overlay {
-          position:fixed; inset:0; background:rgba(0,0,0,0.5);
-          backdrop-filter:blur(4px); display:flex;
-          align-items:center; justify-content:center; z-index:1000;
+          position:fixed; inset:0; background:rgba(0,0,0,0.6);
+          backdrop-filter:blur(8px); display:flex;
+          align-items:center; justify-content:center; z-index:1000; padding:24px;
         }
 
         .gl-modal {
           background:var(--card-bg); border:1px solid var(--border);
-          border-radius:20px; padding:32px; width:100%; max-width:480px;
-          box-shadow:0 24px 64px rgba(0,0,0,0.3);
+          border-radius: 28px; padding: 40px; width:100%; max-width:480px;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
           animation:glSlide 0.3s cubic-bezier(0.16,1,0.3,1);
         }
 
         @keyframes glSlide {
-          from { opacity:0; transform:translateY(20px); }
-          to   { opacity:1; transform:translateY(0); }
+          from { opacity:0; transform:translateY(24px) scale(0.98); }
+          to   { opacity:1; transform:translateY(0) scale(1); }
         }
 
         .gl-modal-header {
@@ -631,56 +681,56 @@ export default function Goals() {
         }
 
         .gl-modal-header h2 {
-          font-family:'Syne',sans-serif; font-size:20px; font-weight:700; color:var(--text);
+          font-family:var(--font-heading); font-size:24px; font-weight:800; color:var(--text); letter-spacing:-0.5px; margin:0;
         }
 
         .gl-modal-close {
-          background:none; border:none; color:var(--muted);
-          font-size:16px; cursor:pointer; padding:4px 8px;
-          border-radius:6px; transition:all 0.2s;
+          background:var(--bg); border:1px solid var(--border); color:var(--muted);
+          font-size:14px; cursor:pointer; padding:6px 10px; font-weight:700;
+          border-radius:10px; transition:all 0.2s cubic-bezier(0.16,1,0.3,1); box-shadow:0 2px 6px var(--shadow);
         }
 
-        .gl-modal-close:hover { background:var(--hover-bg); color:var(--text); }
+        .gl-modal-close:hover { background:var(--hover-bg); color:var(--text); border-color:var(--muted); transform:translateY(-1px); }
 
-        .gl-modal-form { display:flex; flex-direction:column; gap:18px; }
-        .gl-field-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-        .gl-field { display:flex; flex-direction:column; gap:7px; }
-        .gl-field label { font-size:13px; font-weight:500; color:var(--muted); }
-        .gl-opt { font-weight:400; color:var(--placeholder); }
+        .gl-modal-form { display:flex; flex-direction:column; gap:20px; }
+        .gl-field-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .gl-field { display:flex; flex-direction:column; gap:6px; }
+        .gl-field label { font-size:12px; font-weight:700; color:var(--text); font-family:var(--font-heading); text-transform:uppercase; letter-spacing:0.5px; }
+        .gl-opt { font-weight:400; color:var(--placeholder); text-transform:none; font-family:var(--font-body); letter-spacing:0; }
 
         .gl-field input, .gl-field select, .gl-field textarea {
-          background:var(--input-bg); border:1px solid var(--border);
-          border-radius:10px; padding:11px 14px;
-          font-size:14px; color:var(--text);
-          font-family:'DM Sans',sans-serif; outline:none; resize:vertical;
-          transition:border-color 0.2s, box-shadow 0.2s;
+          background:var(--input-bg); border:2px solid var(--border);
+          border-radius:12px; padding:12px 16px;
+          font-size:14px; color:var(--text); font-weight:500;
+          font-family:var(--font-body); outline:none; resize:vertical;
+          transition:all 0.2s; box-shadow:inset 0 1px 3px var(--shadow);
         }
 
         .gl-field input:focus, .gl-field select:focus, .gl-field textarea:focus {
-          border-color:#f97316; box-shadow:0 0 0 3px rgba(249,115,22,0.12);
+          border-color:#f97316; background:var(--bg); box-shadow:0 0 0 3px rgba(249,115,22,0.1), inset 0 1px 3px rgba(0,0,0,0.02);
         }
 
-        .gl-field select option { background:var(--card-bg); }
+        .gl-field select option { background:var(--card-bg); font-weight:500; }
 
         .gl-error {
-          font-size:13px; color:var(--danger-text);
-          background:var(--danger-bg); border-radius:8px; padding:10px 14px;
+          font-size:13px; font-weight:600; color:var(--danger-text);
+          background:var(--danger-bg); border-radius:10px; padding:12px 16px; border:1px solid rgba(239,68,68,0.2);
         }
 
         .gl-submit {
           background:#f97316; color:white; border:none;
-          border-radius:10px; padding:12px; font-size:14px; font-weight:600;
-          font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.2s;
+          border-radius:12px; padding:14px; font-size:15px; font-weight:700;
+          font-family:var(--font-heading); cursor:pointer; transition:all 0.2s cubic-bezier(0.16,1,0.3,1);
           display:flex; align-items:center; justify-content:center;
-          min-height:44px; box-shadow:0 4px 16px rgba(249,115,22,0.3);
+          min-height:48px; box-shadow:0 6px 16px rgba(249,115,22,0.3); margin-top:4px;
         }
 
-        .gl-submit:hover:not(:disabled) { background:#ea6c0a; transform:translateY(-1px); }
-        .gl-submit:disabled { opacity:0.7; cursor:not-allowed; }
+        .gl-submit:hover:not(:disabled) { background:#ea6c0a; transform:translateY(-2px); box-shadow:0 8px 24px rgba(249,115,22,0.4); }
+        .gl-submit:disabled { opacity:0.7; cursor:not-allowed; transform:none; box-shadow:none; }
 
         .gl-spinner {
-          width:16px; height:16px;
-          border:2px solid rgba(255,255,255,0.3); border-top-color:white;
+          width:18px; height:18px;
+          border:3px solid rgba(255,255,255,0.3); border-top-color:white;
           border-radius:50%; animation:glSpin 0.7s linear infinite; display:inline-block;
         }
       `}</style>

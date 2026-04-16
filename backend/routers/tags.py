@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 import os
 import json
+import re
 from groq import Groq
 
 import models
@@ -46,9 +47,10 @@ class MergeSuggestionResponse(BaseModel):
 
 
 class SuggestTagsRequest(BaseModel):
-    note_id: int
+    note_id: Optional[int] = None
     content: str
     title: str
+    current_tags: Optional[str] = None
 
 
 class SuggestTagsResponse(BaseModel):
@@ -81,6 +83,146 @@ def get_or_create_tag(name: str, owner_id: int, db: Session) -> models.Tag:
         db.commit()
         db.refresh(tag)
     return tag
+
+
+STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "how",
+    "i",
+    "in",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "this",
+    "to",
+    "was",
+    "were",
+    "with",
+    "you",
+    "your",
+}
+
+
+TECH_KEYWORDS = {
+    "docker",
+    "docker-compose",
+    "kubernetes",
+    "python",
+    "fastapi",
+    "react",
+    "javascript",
+    "typescript",
+    "sql",
+    "postgres",
+    "sqlite",
+    "api",
+    "backend",
+    "frontend",
+    "devops",
+    "linux",
+    "git",
+    "github",
+    "aws",
+    "database",
+    "security",
+    "authentication",
+    "jwt",
+    "testing",
+    "debugging",
+    "performance",
+    "redis",
+    "nginx",
+    "css",
+    "html",
+}
+
+
+def _sanitize_tag(raw: str) -> Optional[str]:
+    if not raw:
+        return None
+    tag = raw.strip().lower()
+    tag = re.sub(r"[^a-z0-9\- ]+", "", tag)
+    tag = re.sub(r"\s+", "-", tag)
+    tag = re.sub(r"-+", "-", tag).strip("-")
+    if len(tag) < 2:
+        return None
+    return tag[:40]
+
+
+def _split_tags(tag_str: Optional[str]) -> set[str]:
+    if not tag_str:
+        return set()
+    parts = [t.strip() for t in tag_str.split(",") if t.strip()]
+    cleaned = set()
+    for p in parts:
+        s = _sanitize_tag(p)
+        if s:
+            cleaned.add(s)
+    return cleaned
+
+
+def _extract_fallback_tags(
+    title: str,
+    content: str,
+    all_known: List[str],
+    excluded: set[str],
+) -> List[str]:
+    text = f"{title or ''} {content or ''}".lower()
+    tokens = re.findall(r"[a-z0-9][a-z0-9\-]{1,30}", text)
+    token_set = set(tokens)
+
+    ranked = []
+
+    # Prefer known tags already used by the user.
+    for known in all_known:
+        s = _sanitize_tag(known)
+        if s and s not in excluded and (s in token_set or s in text):
+            ranked.append(s)
+
+    # Add direct tech keyword hits.
+    for kw in TECH_KEYWORDS:
+        if kw in text and kw not in excluded:
+            ranked.append(kw)
+
+    # Add statistically useful tokens from the current text.
+    counts = {}
+    for token in tokens:
+        if token in STOPWORDS or token in excluded:
+            continue
+        if token.isdigit() or len(token) < 3:
+            continue
+        counts[token] = counts.get(token, 0) + 1
+
+    for token, count in sorted(counts.items(), key=lambda x: (-x[1], -len(x[0]), x[0])):
+        if count >= 2 or token in TECH_KEYWORDS:
+            ranked.append(token)
+
+    # Deduplicate while preserving order.
+    seen = set()
+    final = []
+    for raw in ranked:
+        clean = _sanitize_tag(raw)
+        if not clean or clean in excluded or clean in seen:
+            continue
+        seen.add(clean)
+        final.append(clean)
+        if len(final) >= 6:
+            break
+
+    return final
 
 
 def build_tag_tree(
@@ -150,7 +292,7 @@ def suggest_tags(
     existing_tags = (
         db.query(models.Tag).filter(models.Tag.owner_id == current_user.id).all()
     )
-    existing_names = [t.name for t in existing_tags]
+    existing_names = [t.name.strip().lower() for t in existing_tags if t.name]
 
     # Also collect tags already in use across notes (from the tags string field)
     notes = db.query(models.Note).filter(models.Note.owner_id == current_user.id).all()
@@ -158,36 +300,34 @@ def suggest_tags(
     for n in notes:
         if n.tags:
             for t in n.tags.split(","):
-                t = t.strip().lower()
+                t = _sanitize_tag(t)
                 if t:
                     inline_tags.add(t)
 
-    all_known = list(set(existing_names) | inline_tags)
+    all_known = sorted(set(existing_names) | inline_tags)
+
+    # Exclude tags already attached to the note or passed in request.
+    existing_for_note = set()
+    if req.note_id:
+        note = (
+            db.query(models.Note)
+            .filter(
+                models.Note.id == req.note_id, models.Note.owner_id == current_user.id
+            )
+            .first()
+        )
+        if note and note.tags:
+            existing_for_note |= _split_tags(note.tags)
+
+    existing_for_note |= _split_tags(req.current_tags)
 
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        # Fallback: simple keyword extraction without AI
-        words = (req.title + " " + req.content).lower().split()
-        tech_keywords = {
-            "docker",
-            "kubernetes",
-            "python",
-            "react",
-            "javascript",
-            "typescript",
-            "sql",
-            "api",
-            "backend",
-            "frontend",
-            "devops",
-            "linux",
-            "git",
-            "aws",
-            "database",
-            "security",
-        }
-        found = [w for w in tech_keywords if w in words]
-        return SuggestTagsResponse(suggested_tags=found[:5])
+        # Deterministic fallback when no AI key is configured.
+        found = _extract_fallback_tags(
+            req.title, req.content, all_known, existing_for_note
+        )
+        return SuggestTagsResponse(suggested_tags=found)
 
     # Trim content to avoid token overflow
     content_preview = req.content[:800] if req.content else ""
@@ -229,10 +369,19 @@ JSON format:
 
     try:
         parsed = json.loads(raw)
-        tags = [t.strip().lower() for t in parsed.get("tags", []) if t.strip()][:6]
+        tags = []
+        for t in parsed.get("tags", []):
+            clean = _sanitize_tag(t)
+            if clean and clean not in existing_for_note and clean not in tags:
+                tags.append(clean)
+            if len(tags) >= 6:
+                break
         return SuggestTagsResponse(suggested_tags=tags)
     except Exception:
-        return SuggestTagsResponse(suggested_tags=[])
+        fallback = _extract_fallback_tags(
+            req.title, req.content, all_known, existing_for_note
+        )
+        return SuggestTagsResponse(suggested_tags=fallback)
 
 
 @router.get("/merge-suggestions", response_model=List[MergeSuggestionResponse])

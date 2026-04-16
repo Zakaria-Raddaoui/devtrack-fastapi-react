@@ -161,7 +161,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
           border-radius: 6px; padding: 5px 8px;
           font-size: 11px; font-weight: 500;
           color: var(--muted); cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: all 0.15s; white-space: nowrap;
         }
 
@@ -189,7 +189,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
         }
 
         .pomo-digits {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 20px; font-weight: 700;
           color: var(--text); letter-spacing: -1px;
         }
@@ -207,7 +207,7 @@ export default function PomodoroTimer({ onSessionComplete }) {
         .pomo-btn {
           flex: 1; border: none; border-radius: 8px;
           padding: 9px; font-size: 13px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           cursor: pointer; transition: all 0.2s;
           display: flex; align-items: center;
           justify-content: center; gap: 5px;

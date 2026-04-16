@@ -124,7 +124,7 @@ export default function Login() {
           align-items: center;
           justify-content: center;
           background: var(--bg);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           position: relative;
           overflow: hidden;
         }
@@ -203,7 +203,7 @@ export default function Login() {
         }
 
         .logo-text {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-weight: 800;
           font-size: 22px;
           color: var(--text);
@@ -211,7 +211,7 @@ export default function Login() {
         }
 
         .auth-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-weight: 700;
           font-size: 28px;
           color: var(--text);
@@ -252,7 +252,7 @@ export default function Login() {
           padding: 12px 16px;
           font-size: 15px;
           color: var(--text);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: border-color 0.2s, box-shadow 0.2s;
           outline: none;
         }
@@ -282,7 +282,7 @@ export default function Login() {
           padding: 13px;
           font-size: 15px;
           font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           cursor: pointer;
           transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
           display: flex;
@@ -326,7 +326,7 @@ export default function Login() {
           font-weight: 600;
           cursor: pointer;
           font-size: 13px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           padding: 0;
           text-decoration: underline;
           text-underline-offset: 3px;

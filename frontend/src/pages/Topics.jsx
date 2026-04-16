@@ -20,6 +20,26 @@ const STATUS_META = {
 
 const COLUMNS = ['to_learn', 'learning', 'mastered'];
 
+function reorderTopicIds({ orderedTopics, source, destination }) {
+    const buckets = COLUMNS.reduce((acc, status) => {
+        acc[status] = orderedTopics.filter(t => t.status === status).map(t => t.id);
+        return acc;
+    }, {});
+
+    const sourceIds = [...(buckets[source.droppableId] || [])];
+    const destinationIds = source.droppableId === destination.droppableId
+        ? sourceIds
+        : [...(buckets[destination.droppableId] || [])];
+
+    const [movedId] = sourceIds.splice(source.index, 1);
+    destinationIds.splice(destination.index, 0, movedId);
+
+    buckets[source.droppableId] = sourceIds;
+    buckets[destination.droppableId] = destinationIds;
+
+    return COLUMNS.flatMap(status => buckets[status]);
+}
+
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
 function TopicModal({ topic, defaultStatus, onClose, onSaved }) {
@@ -108,7 +128,7 @@ function TopicModal({ topic, defaultStatus, onClose, onSaved }) {
 
 // ─── Topic Card ───────────────────────────────────────────────────────────────
 
-function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes, onStartSession }) {
+function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes, onStartSession, dragDisabled }) {
     const [confirm, setConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const navigate = useNavigate();
@@ -125,20 +145,21 @@ function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes, onStartSessi
     const pct = topic.goal_hours ? Math.min(100, Math.round((loggedMinutes / (topic.goal_hours * 60)) * 100)) : null;
     const progressColor = pct === null ? '#f97316' : pct >= 100 ? '#22c55e' : pct >= 60 ? '#f97316' : '#3b82f6';
 
-    return (
-        <Draggable draggableId={String(topic.id)} index={index}>
+        return (
+        <Draggable draggableId={String(topic.id)} index={index} isDragDisabled={dragDisabled}>
             {(provided, snapshot) => (
                 <div
-                    className={`tp-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                    className="tp-card-wrap"
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    style={{
-                        ...provided.draggableProps.style,
-                        borderLeft: `3px solid ${diff.border}`,
-                    }}
+                    style={provided.draggableProps.style}
                 >
-                    {/* Top row */}
+                    <div
+                        className={`tp-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                        style={{ borderLeft: `3px solid ${diff.border}` }}
+                    >
+                        {/* Top row */}
                     <div className="tp-card-top">
                         <span className="tp-diff-badge" style={{ background: diff.bg, color: diff.text }}>
                             {diff.label}
@@ -204,6 +225,7 @@ function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes, onStartSessi
                             onCancel={() => setConfirm(false)}
                         />
                     )}
+                    </div>
                 </div>
             )}
         </Draggable>
@@ -212,7 +234,7 @@ function TopicCard({ topic, index, onEdit, onDelete, loggedMinutes, onStartSessi
 
 // ─── Kanban Column ────────────────────────────────────────────────────────────
 
-function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes, onAdd, onStartSession }) {
+function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes, onAdd, onStartSession, dragDisabled }) {
     const meta = STATUS_META[status];
     const totalHours = (topics.reduce((s, t) => s + (topicMinutes[t.id] || 0), 0) / 60).toFixed(1);
 
@@ -257,6 +279,7 @@ function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes, onAdd, o
                                 onDelete={onDelete}
                                 loggedMinutes={topicMinutes[t.id] || 0}
                                 onStartSession={onStartSession}
+                                dragDisabled={dragDisabled}
                             />
                         ))}
                         {provided.placeholder}
@@ -278,11 +301,12 @@ function KanbanColumn({ status, topics, onEdit, onDelete, topicMinutes, onAdd, o
 export default function Topics() {
     const [topics, setTopics] = useState([]);
     const [logs, setLogs] = useState([]);
+    const [topicOrder, setTopicOrder] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(null);
     const [defaultStatus, setDefaultStatus] = useState('to_learn');
     const [search, setSearch] = useState('');
-    const [sort, setSort] = useState('date');
+    const [sort, setSort] = useState('manual');
     const [sessionTopicId, setSessionTopicId] = useState(null);
 
     const fetchData = async () => {
@@ -293,6 +317,7 @@ export default function Topics() {
             ]);
             setTopics(topicsRes.data);
             setLogs(logsRes.data);
+            setTopicOrder(topicsRes.data.map(t => t.id));
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -305,13 +330,43 @@ export default function Topics() {
         return acc;
     }, {});
 
+    const isDragEnabled = sort === 'manual' && !search.trim();
+
+    const orderMap = topicOrder.reduce((acc, id, index) => {
+        acc[id] = index;
+        return acc;
+    }, {});
+
+    const orderedTopics = [...topics].sort((a, b) => {
+        const ai = orderMap[a.id] ?? Number.MAX_SAFE_INTEGER;
+        const bi = orderMap[b.id] ?? Number.MAX_SAFE_INTEGER;
+        return ai - bi;
+    });
+
     const onDragEnd = async ({ source, destination, draggableId }) => {
-        if (!destination || source.droppableId === destination.droppableId) return;
+        if (!destination || !isDragEnabled) return;
+
         const id = parseInt(draggableId);
         const status = destination.droppableId;
+        const movedAcrossColumns = source.droppableId !== destination.droppableId;
+
+        const nextOrder = reorderTopicIds({
+            orderedTopics,
+            source,
+            destination,
+        });
+
+        setTopicOrder(nextOrder);
         setTopics(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-        try { await api.put(`/topics/${id}`, { status }); }
-        catch (e) { console.error(e); fetchData(); }
+
+        if (!movedAcrossColumns) return;
+
+        try {
+            await api.put(`/topics/${id}`, { status });
+        } catch (e) {
+            console.error(e);
+            fetchData();
+        }
     };
 
     const openAdd = (status) => {
@@ -320,9 +375,10 @@ export default function Topics() {
     };
 
     // Filter + sort
-    const filtered = topics
+    const filtered = orderedTopics
         .filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()))
         .sort((a, b) => {
+            if (sort === 'manual') return 0;
             if (sort === 'hours') return (topicMinutes[b.id] || 0) - (topicMinutes[a.id] || 0);
             return new Date(b.created_at) - new Date(a.created_at);
         });
@@ -390,6 +446,10 @@ export default function Topics() {
                 </div>
                 <div className="tp-sort-toggle">
                     <button
+                        className={`tp-sort-btn ${sort === 'manual' ? 'active' : ''}`}
+                        onClick={() => setSort('manual')}
+                    >Manual</button>
+                    <button
                         className={`tp-sort-btn ${sort === 'date' ? 'active' : ''}`}
                         onClick={() => setSort('date')}
                     >Recent</button>
@@ -399,6 +459,10 @@ export default function Topics() {
                     >Most logged</button>
                 </div>
             </div>
+
+            {!isDragEnabled && (
+                <div className="tp-drag-hint">Drag-and-drop is enabled only in Manual sort with no active search.</div>
+            )}
 
             {/* Kanban board */}
             <DragDropContext onDragEnd={onDragEnd}>
@@ -413,6 +477,7 @@ export default function Topics() {
                             topicMinutes={topicMinutes}
                             onAdd={openAdd}
                             onStartSession={setSessionTopicId}
+                            dragDisabled={!isDragEnabled}
                         />
                     ))}
                 </div>
@@ -432,6 +497,7 @@ export default function Topics() {
                 <StudySession
                     topics={topics}
                     initialTopicId={sessionTopicId}
+                    onLogSaved={(log) => setLogs(prev => [log, ...prev])}
                     onClose={() => setSessionTopicId(null)}
                 />
             )}
@@ -468,7 +534,7 @@ export default function Topics() {
         }
 
         .tp-page-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 28px; font-weight: 700;
           color: var(--text); letter-spacing: -0.5px; margin: 0 0 4px;
         }
@@ -480,7 +546,7 @@ export default function Topics() {
           background: #f97316; color: white; border: none;
           border-radius: 10px; padding: 11px 20px;
           font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           cursor: pointer; transition: all 0.2s;
           box-shadow: 0 4px 16px rgba(249,115,22,0.3);
           white-space: nowrap; flex-shrink: 0;
@@ -504,7 +570,7 @@ export default function Topics() {
         }
 
         .tp-stat-val {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 24px; font-weight: 800;
           letter-spacing: -0.5px; line-height: 1; color: var(--text);
         }
@@ -540,7 +606,7 @@ export default function Topics() {
 
         .tp-search {
           flex: 1; background: none; border: none; outline: none;
-          font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
+          font-size: 14px; color: var(--text); font-family: var(--font-body);
         }
 
         .tp-search::placeholder { color: var(--placeholder); }
@@ -563,12 +629,17 @@ export default function Topics() {
           background: none; border: none; border-radius: 7px;
           padding: 6px 14px; font-size: 13px; font-weight: 500;
           color: var(--muted); cursor: pointer;
-          font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+          font-family: var(--font-body); transition: all 0.15s;
         }
 
         .tp-sort-btn.active {
           background: var(--bg); color: var(--text);
           box-shadow: 0 1px 4px var(--shadow);
+        }
+
+        .tp-drag-hint {
+          font-size: 12px; color: var(--muted);
+          margin: -8px 0 14px;
         }
 
         /* Board */
@@ -579,54 +650,67 @@ export default function Topics() {
 
         /* Column */
         .tp-col {
-          background: var(--card-bg);
+          background: var(--bg);
           border: 1px solid var(--border);
-          border-radius: 16px; overflow: hidden;
+          border-radius: 24px; overflow: hidden;
+          display: flex; flex-direction: column;
+          box-shadow: inset 0 2px 14px var(--shadow);
+        }
+
+        .tp-col-body {
+          padding: 16px; display: flex; flex-direction: column;
+          min-height: 120px;
+          transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .tp-col-body.drag-over {
+          background: rgba(249,115,22,0.03);
+          box-shadow: inset 0 0 0 2px rgba(249,115,22,0.2) !important;
+          border-radius: 0 0 24px 24px;
         }
 
         .tp-col-header {
           display: flex; align-items: center;
           justify-content: space-between;
-          padding: 14px 16px;
+          padding: 20px 24px;
+          background: var(--card-bg);
           border-bottom: 1px solid var(--border);
+          z-index: 1;
         }
 
-        .tp-col-header-left { display: flex; align-items: center; gap: 8px; }
-        .tp-col-header-right { display: flex; align-items: center; gap: 8px; }
+        .tp-col-header-left { display: flex; align-items: center; gap: 10px; }
+        .tp-col-header-right { display: flex; align-items: center; gap: 12px; }
 
-        .tp-col-icon { font-size: 16px; line-height: 1; }
+        .tp-col-icon { font-size: 20px; line-height: 1; }
 
         .tp-col-label {
-          font-family: 'Syne', sans-serif;
-          font-size: 14px; font-weight: 700; color: var(--text);
+          font-family: var(--font-heading);
+          font-size: 16px; font-weight: 800; color: var(--text);
+          letter-spacing: -0.5px;
         }
 
         .tp-col-count {
-          font-size: 11px; font-weight: 700;
-          padding: 2px 8px; border-radius: 99px;
+          font-size: 12px; font-weight: 800; font-family: var(--font-heading);
+          padding: 4px 10px; border-radius: 99px;
         }
 
         .tp-col-hours {
-          font-size: 11px; color: var(--muted); font-weight: 500;
+          font-size: 12px; color: var(--muted); font-weight: 600;
         }
 
         .tp-col-add-btn {
-          width: 24px; height: 24px;
+          width: 32px; height: 32px;
           background: var(--bg); border: 1px solid var(--border);
-          border-radius: 6px; font-size: 16px; color: var(--muted);
+          border-radius: 10px; font-size: 20px; color: var(--muted);
           cursor: pointer; display: flex; align-items: center;
-          justify-content: center; transition: all 0.15s; line-height: 1;
+          justify-content: center; transition: all 0.2s; line-height: 1;
+          box-shadow: 0 2px 8px var(--shadow);
         }
 
         .tp-col-add-btn:hover {
           background: rgba(249,115,22,0.1);
           border-color: #f97316; color: #f97316;
-        }
-
-        .tp-col-body {
-          padding: 12px; display: flex; flex-direction: column;
-          gap: 10px; min-height: 80px;
-          transition: background 0.15s;
+          transform: translateY(-2px); box-shadow: 0 6px 16px rgba(249,115,22,0.2);
         }
 
         .tp-col-empty {
@@ -652,24 +736,30 @@ export default function Topics() {
 
         /* Topic card */
         .tp-card {
-          background: var(--bg);
+          background: var(--card-bg);
           border: 1px solid var(--border);
-          border-radius: 12px; padding: 14px 14px 12px;
-          display: flex; flex-direction: column; gap: 8px;
+          border-radius: 18px; padding: 20px;
+          display: flex; flex-direction: column; gap: 12px;
           cursor: grab; user-select: none;
-          transition: box-shadow 0.2s, transform 0.15s;
-          position: relative;
+          box-shadow: 0 4px 12px var(--shadow);
+          box-sizing: border-box;
+          margin: 0 !important;
         }
 
         .tp-card:hover {
-          box-shadow: 0 6px 24px var(--shadow);
-          transform: translateY(-1px);
+          box-shadow: 0 12px 32px var(--shadow);
+          border-color: var(--accent);
         }
 
         .tp-card.dragging {
-          box-shadow: 0 16px 48px var(--shadow);
-          cursor: grabbing; opacity: 0.96;
-          transform: rotate(1deg);
+          box-shadow: 0 24px 64px var(--shadow);
+          cursor: grabbing; opacity: 0.98;
+          border-color: #f97316;
+          z-index: 100;
+        }
+
+        .tp-card-wrap {
+          margin-bottom: 12px;
         }
 
         .tp-card-top {
@@ -694,14 +784,14 @@ export default function Topics() {
           background: none; border: none; border-radius: 6px;
           padding: 3px 7px; font-size: 13px; color: var(--muted);
           cursor: pointer; transition: all 0.15s;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
         }
 
         .tp-icon-btn:hover { background: var(--hover-bg); color: #f97316; }
         .tp-icon-btn.del:hover { background: var(--danger-bg); color: var(--danger-text); }
 
         .tp-card-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 15px; font-weight: 700;
           color: var(--text); margin: 0; letter-spacing: -0.3px;
           cursor: pointer; transition: color 0.15s;
@@ -769,7 +859,7 @@ export default function Topics() {
           font-size: 12px; font-weight: 600;
           color: #22c55e;
           cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: all 0.15s;
           margin-top: 4px;
           letter-spacing: 0.1px;
@@ -791,8 +881,8 @@ export default function Topics() {
 
         .tp-modal {
           background: var(--card-bg); border: 1px solid var(--border);
-          border-radius: 20px; padding: 32px; width: 100%; max-width: 460px;
-          box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+          border-radius: 24px; padding: 36px; width: 100%; max-width: 460px;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
           animation: tpSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -807,7 +897,7 @@ export default function Topics() {
         }
 
         .tp-modal-header h2 {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 20px; font-weight: 700; color: var(--text);
         }
 
@@ -829,7 +919,7 @@ export default function Topics() {
           background: var(--input-bg); border: 1px solid var(--border);
           border-radius: 10px; padding: 11px 14px;
           font-size: 14px; color: var(--text);
-          font-family: 'DM Sans', sans-serif; outline: none; resize: vertical;
+          font-family: var(--font-body); outline: none; resize: vertical;
           transition: border-color 0.2s, box-shadow 0.2s;
         }
 
@@ -847,7 +937,7 @@ export default function Topics() {
         .tp-submit {
           background: #f97316; color: white; border: none;
           border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+          font-family: var(--font-body); cursor: pointer; transition: all 0.2s;
           display: flex; align-items: center; justify-content: center;
           min-height: 44px; box-shadow: 0 4px 16px rgba(249,115,22,0.3);
         }

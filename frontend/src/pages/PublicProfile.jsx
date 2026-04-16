@@ -22,7 +22,7 @@ const STYLES = `
   .pp-root {
     min-height: 100vh;
     background: #0a0a0a;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
     color: #f0ede8;
     position: relative;
     overflow-x: hidden;
@@ -53,7 +53,7 @@ const STYLES = `
     min-height: 100vh; background: #0a0a0a;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 20px; font-family: 'DM Sans', sans-serif;
+    gap: 20px; font-family: var(--font-body);
     text-align: center; padding: 24px;
   }
 
@@ -61,12 +61,11 @@ const STYLES = `
     width: 80px; height: 80px; border-radius: 50%;
     background: linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05));
     border: 1px solid rgba(249,115,22,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 32px; margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: center; font-size: 36px; letter-spacing: -1px; font-weight: 800; margin-bottom: 4px;
   }
 
   .pp-nf-title {
-    font-family: 'Syne', sans-serif;
+    font-family: var(--font-heading);
     font-size: 28px; font-weight: 800;
     color: #f0ede8; letter-spacing: -0.5px;
   }
@@ -78,7 +77,7 @@ const STYLES = `
     background: #f97316; color: white;
     text-decoration: none; border-radius: 10px;
     padding: 11px 22px; font-size: 14px; font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
     transition: all 0.2s; margin-top: 4px;
     box-shadow: 0 4px 16px rgba(249,115,22,0.3);
   }
@@ -106,7 +105,7 @@ const STYLES = `
     background: linear-gradient(135deg, #f97316, #fb923c);
     color: white; display: flex;
     align-items: center; justify-content: center;
-    font-family: 'Syne', sans-serif;
+    font-family: var(--font-heading);
     font-size: 30px; font-weight: 800; flex-shrink: 0;
     box-shadow: 0 8px 24px rgba(249,115,22,0.3);
   }
@@ -114,7 +113,7 @@ const STYLES = `
   .pp-info { flex: 1; min-width: 0; }
 
   .pp-username {
-    font-family: 'Syne', sans-serif;
+    font-family: var(--font-heading);
     font-size: 34px; font-weight: 800;
     color: #f0ede8; letter-spacing: -1px; margin-bottom: 8px;
   }
@@ -136,7 +135,7 @@ const STYLES = `
     border-radius: 99px; padding: 8px 18px;
     text-decoration: none; color: #f97316;
     font-size: 13px; font-weight: 700;
-    font-family: 'Syne', sans-serif;
+    font-family: var(--font-heading);
     transition: all 0.2s; flex-shrink: 0; align-self: flex-start;
     letter-spacing: -0.3px;
   }
@@ -158,7 +157,7 @@ const STYLES = `
   .pp-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
 
   .pp-stat-val {
-    font-family: 'Syne', sans-serif;
+    font-family: var(--font-heading);
     font-size: 30px; font-weight: 800;
     letter-spacing: -1px; margin-bottom: 5px;
   }
@@ -172,7 +171,7 @@ const STYLES = `
   .pp-topics { display: flex; flex-direction: column; gap: 8px; }
 
   .pp-topics-title {
-    font-family: 'Syne', sans-serif;
+    font-family: var(--font-heading);
     font-size: 18px; font-weight: 700;
     color: #f0ede8; margin-bottom: 8px;
   }
@@ -217,7 +216,7 @@ const STYLES = `
     background: #f97316; color: white;
     text-decoration: none; border-radius: 12px;
     padding: 14px 32px; font-size: 15px; font-weight: 600;
-    font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    font-family: var(--font-body); transition: all 0.2s;
     box-shadow: 0 4px 20px rgba(249,115,22,0.35);
   }
 
@@ -235,6 +234,13 @@ export default function PublicProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+  const resolveMediaUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `${apiBase}${url}`;
+  };
 
   useEffect(() => {
     api.get(`/u/${username}`)
@@ -276,7 +282,15 @@ export default function PublicProfile() {
           {/* Header */}
           <div className="pp-header">
             <div className="pp-header-left">
-              <div className="pp-avatar">{username[0].toUpperCase()}</div>
+              <div className="pp-avatar">
+                {profile.profile_picture ? (
+                  <img
+                    src={resolveMediaUrl(profile.profile_picture)}
+                    alt={`${profile.username} avatar`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : username[0].toUpperCase()}
+              </div>
               <div className="pp-info">
                 <h1 className="pp-username">{profile.username}</h1>
                 {profile.bio && <p className="pp-bio">{profile.bio}</p>}

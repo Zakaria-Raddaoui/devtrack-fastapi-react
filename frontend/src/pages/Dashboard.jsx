@@ -285,35 +285,35 @@ export default function Dashboard() {
       {/* ── Stat cards ── */}
       <div className="db-stats-grid">
         <div className="db-stat-card" style={{ '--accent': '#f97316' }}>
-          <div className="db-stat-icon">⏱</div>
+          <div className="db-stat-icon" style={{ background: 'rgba(249,115,22,0.15)', color: '#f97316' }}>⏳</div>
           <div className="db-stat-body">
             <p className="db-stat-val">{stats?.total_hours ?? 0}h</p>
             <p className="db-stat-label">Total hours</p>
           </div>
         </div>
         <div className="db-stat-card" style={{ '--accent': '#3b82f6' }}>
-          <div className="db-stat-icon">◑</div>
+          <div className="db-stat-icon" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>🚀</div>
           <div className="db-stat-body">
             <p className="db-stat-val">{stats?.topics_in_progress ?? 0}</p>
             <p className="db-stat-label">In progress</p>
           </div>
         </div>
         <div className="db-stat-card" style={{ '--accent': '#22c55e' }}>
-          <div className="db-stat-icon">✓</div>
+          <div className="db-stat-icon" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>🎯</div>
           <div className="db-stat-body">
             <p className="db-stat-val">{stats?.topics_mastered ?? 0}</p>
             <p className="db-stat-label">Mastered</p>
           </div>
         </div>
         <div className="db-stat-card" style={{ '--accent': '#a855f7' }}>
-          <div className="db-stat-icon">📅</div>
+          <div className="db-stat-icon" style={{ background: 'rgba(168,85,247,0.15)', color: '#a855f7' }}>📈</div>
           <div className="db-stat-body">
             <p className="db-stat-val">{weekHours}h</p>
             <p className="db-stat-label">This week</p>
           </div>
         </div>
         <div className="db-stat-card" style={{ '--accent': '#f97316' }}>
-          <div className="db-stat-icon">🔥</div>
+          <div className="db-stat-icon" style={{ background: 'rgba(249,115,22,0.15)', color: '#f97316' }}>🔥</div>
           <div className="db-stat-body">
             <p className="db-stat-val">{streak}</p>
             <p className="db-stat-label">Day streak</p>
@@ -321,7 +321,7 @@ export default function Dashboard() {
         </div>
         {pace && (
           <div className="db-stat-card" style={{ '--accent': '#ec4899' }}>
-            <div className="db-stat-icon">⚡</div>
+            <div className="db-stat-icon" style={{ background: 'rgba(236,72,153,0.15)', color: '#ec4899' }}>⚡</div>
             <div className="db-stat-body">
               <p className="db-stat-val">{pace}</p>
               <p className="db-stat-label">Days/week avg</p>
@@ -511,10 +511,11 @@ export default function Dashboard() {
 
       <style>{`
         .db-root {
-          padding: 40px 44px; width: 100%;
+          padding: 40px; 
+          width: 100%;
           box-sizing: border-box;
           animation: dbFade 0.4s ease forwards;
-          display: flex; flex-direction: column; gap: 20px;
+          display: flex; flex-direction: column; gap: 24px;
         }
 
         @keyframes dbFade {
@@ -537,19 +538,20 @@ export default function Dashboard() {
 
         /* ── Header ── */
         .db-header {
-          display: flex; align-items: center;
+          display: flex; align-items: flex-end;
           justify-content: space-between; gap: 20px; flex-wrap: wrap;
+          margin-bottom: 12px;
         }
 
         .db-greeting {
-          font-family: 'Syne', sans-serif;
-          font-size: 28px; font-weight: 700;
-          color: var(--text); letter-spacing: -0.5px; margin: 0 0 6px;
+          font-family: var(--font-heading);
+          font-size: 38px; font-weight: 800;
+          color: var(--text); letter-spacing: -1px; margin: 0 0 6px;
         }
 
         .db-name { color: #f97316; }
 
-        .db-sub { font-size: 14px; color: var(--muted); margin: 0; }
+        .db-sub { font-size: 15px; color: var(--muted); margin: 0; }
 
         .db-header-right {
           display: flex; align-items: center; gap: 16px;
@@ -558,29 +560,32 @@ export default function Dashboard() {
         .db-primary-btn {
           display: flex; align-items: center; gap: 8px;
           background: #f97316; color: white; border: none;
-          border-radius: 10px; padding: 11px 20px;
-          font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          border-radius: 14px; padding: 12px 24px;
+          font-size: 15px; font-weight: 700;
+          font-family: var(--font-heading);
           cursor: pointer; transition: all 0.2s;
-          box-shadow: 0 4px 16px rgba(249,115,22,0.3);
+          box-shadow: 0 8px 24px rgba(249,115,22,0.3);
           white-space: nowrap;
         }
 
         .db-primary-btn span { font-size: 18px; line-height: 1; }
-        .db-primary-btn:hover { background: #ea6c0a; transform: translateY(-1px); }
+        .db-primary-btn:hover { background: #ea6c0a; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(249,115,22,0.4); }
 
         .db-capture-btn {
           display: flex; align-items: center; gap: 7px;
           background: var(--card-bg); color: var(--text);
-          border: 1px solid var(--border); border-radius: 10px;
-          padding: 11px 18px; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          border: 1px solid var(--border); border-radius: 14px;
+          padding: 12px 20px; font-size: 15px; font-weight: 700;
+          font-family: var(--font-heading);
           cursor: pointer; transition: all 0.2s; white-space: nowrap;
+          box-shadow: 0 4px 12px var(--shadow);
         }
 
         .db-capture-btn:hover {
           border-color: #f97316; color: #f97316;
           background: rgba(249,115,22,0.06);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px var(--shadow);
         }
 
         /* ── Daily ring ── */
@@ -598,7 +603,7 @@ export default function Dashboard() {
         }
 
         .db-ring-val {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 14px; font-weight: 800; line-height: 1;
         }
 
@@ -610,51 +615,57 @@ export default function Dashboard() {
         /* ── Stat cards ── */
         .db-stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 14px;
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          gap: 20px;
         }
 
         .db-stat-card {
           background: var(--card-bg); border: 1px solid var(--border);
-          border-radius: 14px; padding: 18px 20px;
-          display: flex; align-items: center; gap: 14px;
-          border-left: 3px solid var(--accent);
-          transition: transform 0.2s, box-shadow 0.2s;
+          border-radius: 20px; padding: 24px;
+          display: flex; align-items: center; gap: 16px;
+          transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
           position: relative; overflow: hidden;
+          box-shadow: 0 8px 24px var(--shadow);
         }
 
         .db-stat-card:hover {
-          transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow);
+          transform: translateY(-4px);
+          box-shadow: 0 16px 40px var(--shadow), 0 6px 16px rgba(0,0,0,0.03);
+          border-color: var(--accent);
         }
 
         .db-stat-icon {
-          font-size: 22px; line-height: 1; flex-shrink: 0;
+          font-size: 28px; line-height: 1; flex-shrink: 0;
+          width: 56px; height: 56px; border-radius: 16px;
+          display: flex; align-items: center; justify-content: center;
         }
 
-        .db-stat-body { display: flex; flex-direction: column; gap: 2px; }
+        .db-stat-body { display: flex; flex-direction: column; gap: 4px; }
 
         .db-stat-val {
-          font-family: 'Syne', sans-serif;
-          font-size: 26px; font-weight: 800;
-          color: var(--text); letter-spacing: -0.5px; line-height: 1;
+          font-family: var(--font-heading);
+          font-size: 32px; font-weight: 800;
+          color: var(--text); letter-spacing: -1.5px; line-height: 1;
         }
 
         .db-stat-label {
-          font-size: 11px; color: var(--muted);
+          font-size: 13px; font-weight: 600; color: var(--muted);
           text-transform: uppercase; letter-spacing: 0.5px;
         }
 
         /* ── Row layout ── */
         .db-row {
-          display: grid; gap: 20px;
-          grid-template-columns: 1fr 1fr;
+          display: grid; gap: 24px;
+          grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
         }
 
         /* ── Cards ── */
         .db-continue-card, .db-recent-card, .db-chart-card, .db-topics-card {
           background: var(--card-bg); border: 1px solid var(--border);
-          border-radius: 16px; padding: 22px;
-          display: flex; flex-direction: column; gap: 14px;
+          border-radius: 24px; padding: 32px;
+          display: flex; flex-direction: column; gap: 20px;
+          box-shadow: 0 12px 32px var(--shadow);
+          transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
         }
 
         .db-card-header {
@@ -663,9 +674,9 @@ export default function Dashboard() {
         }
 
         .db-card-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 15px; font-weight: 700;
-          color: var(--text); margin: 0;
+          font-family: var(--font-heading);
+          font-size: 20px; font-weight: 800;
+          color: var(--text); margin: 0; letter-spacing: -0.5px;
         }
 
         .db-card-meta { font-size: 12px; color: var(--muted); }
@@ -687,73 +698,89 @@ export default function Dashboard() {
           justify-content: space-between; gap: 12px;
         }
 
+        .db-continue-card:hover, .db-recent-card:hover, .db-chart-card:hover, .db-topics-card:hover, .db-pace-card:hover {
+          box-shadow: 0 16px 40px var(--shadow), 0 6px 16px rgba(0,0,0,0.03);
+        }
+
         .db-continue-info {
-          display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;
+          display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0;
         }
 
         .db-continue-name {
-          font-family: 'Syne', sans-serif;
-          font-size: 17px; font-weight: 700; color: var(--text);
+          font-family: var(--font-heading);
+          font-size: 20px; font-weight: 800; color: var(--text);
         }
 
-        .db-continue-meta { font-size: 12px; color: var(--muted); }
+        .db-continue-meta { font-size: 13px; font-weight: 600; color: var(--muted); }
 
         .db-continue-notes {
-          font-size: 13px; color: var(--muted);
+          font-size: 14px; color: var(--muted);
           font-style: italic; margin: 4px 0 0;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .db-continue-btn {
-          background: rgba(249,115,22,0.1);
-          border: 1px solid rgba(249,115,22,0.3);
-          border-radius: 8px; padding: 8px 14px;
-          font-size: 13px; font-weight: 600;
-          color: #f97316; cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+          background: #f97316;
+          border: none;
+          border-radius: 12px; padding: 12px 20px;
+          font-size: 15px; font-weight: 700;
+          color: white; cursor: pointer;
+          font-family: var(--font-heading);
+          box-shadow: 0 4px 16px rgba(249,115,22,0.3);
+          transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
         }
 
-        .db-continue-btn:hover { background: rgba(249,115,22,0.2); }
+        .db-continue-btn:hover { background: #ea6c0a; box-shadow: 0 8px 24px rgba(249,115,22,0.4); transform: translateY(-2px); }
 
         /* Recent logs */
         .db-recent-list {
-          display: flex; flex-direction: column; gap: 12px;
+          display: flex; flex-direction: column; gap: 16px;
         }
 
         .db-recent-item {
-          display: flex; gap: 12px; align-items: flex-start;
+          display: flex; gap: 16px; align-items: flex-start;
+          padding: 16px; border-radius: 16px; border: 1px solid transparent;
+          transition: all 0.2s;
+        }
+
+        .db-recent-item:hover {
+          background: var(--input-bg); border-color: var(--border);
+          transform: translateX(4px); box-shadow: 0 4px 12px var(--shadow);
         }
 
         .db-recent-dot {
-          width: 8px; height: 8px; border-radius: 50%;
-          background: #f97316; flex-shrink: 0; margin-top: 5px;
+          width: 10px; height: 10px; border-radius: 50%;
+          background: #f97316; flex-shrink: 0; margin-top: 6px;
+          box-shadow: 0 0 10px rgba(249,115,22,0.4);
         }
 
         .db-recent-body { flex: 1; min-width: 0; }
 
         .db-recent-top {
           display: flex; align-items: center;
-          justify-content: space-between; gap: 8px; margin-bottom: 3px;
+          justify-content: space-between; gap: 8px; margin-bottom: 4px;
         }
 
         .db-recent-topic {
-          font-size: 13px; font-weight: 600; color: var(--text);
+          font-family: var(--font-heading);
+          font-size: 15px; font-weight: 700; color: var(--text);
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .db-recent-time {
-          font-size: 11px; font-weight: 600; color: #f97316;
+          font-family: var(--font-heading);
+          font-size: 13px; font-weight: 800; color: #f97316;
+          background: rgba(249,115,22,0.1); padding: 4px 8px; border-radius: 8px;
           flex-shrink: 0;
         }
 
         .db-recent-notes {
-          font-size: 12px; color: var(--muted);
-          line-height: 1.4; margin: 0 0 3px;
+          font-size: 14px; color: var(--muted);
+          line-height: 1.5; margin: 0 0 6px;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        .db-recent-ago { font-size: 10px; color: var(--placeholder); }
+        .db-recent-ago { font-size: 11px; font-weight: 600; color: var(--placeholder); text-transform: uppercase; letter-spacing: 0.5px; }
 
         /* Tooltip */
         .db-tooltip {
@@ -765,16 +792,21 @@ export default function Dashboard() {
         .db-tooltip-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
         .db-tooltip-val {
           font-size: 16px; font-weight: 700; color: #f97316;
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
         }
 
         /* Pace card */
         .db-pace-card {
-          background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(249,115,22,0.02));
+          background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(249,115,22,0.02));
           border: 1px solid rgba(249,115,22,0.2);
-          border-radius: 16px; padding: 22px;
+          border-radius: 24px; padding: 32px;
           display: flex; align-items: center;
           justify-content: space-between; gap: 20px; flex-wrap: wrap;
+          box-shadow: 0 16px 40px rgba(0,0,0,0.05);
+        }
+
+        .db-pace-card:hover {
+          transform: translateY(-4px); box-shadow: 0 24px 48px rgba(249,115,22,0.1);
         }
 
         .db-pace-left { display: flex; align-items: center; gap: 14px; }
@@ -782,7 +814,7 @@ export default function Dashboard() {
         .db-pace-icon { font-size: 28px; }
 
         .db-pace-title {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 3px;
         }
 
@@ -798,7 +830,7 @@ export default function Dashboard() {
         }
 
         .db-pace-val {
-          font-family: 'Syne', sans-serif;
+          font-family: var(--font-heading);
           font-size: 24px; font-weight: 800;
           letter-spacing: -0.5px; line-height: 1;
         }
@@ -821,8 +853,8 @@ export default function Dashboard() {
 
         .db-modal {
           background: var(--card-bg); border: 1px solid var(--border);
-          border-radius: 20px; padding: 32px; width: 100%; max-width: 460px;
-          box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+          border-radius: 28px; padding: 40px; width: 100%; max-width: 480px;
+          box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
           animation: dbSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -837,8 +869,9 @@ export default function Dashboard() {
         }
 
         .db-modal-header h2 {
-          font-family: 'Syne', sans-serif;
-          font-size: 20px; font-weight: 700; color: var(--text);
+          font-family: var(--font-heading);
+          font-size: 26px; font-weight: 800; color: var(--text);
+          letter-spacing: -1px; margin: 0;
         }
 
         .db-modal-close {
@@ -855,15 +888,16 @@ export default function Dashboard() {
         .db-field label { font-size: 13px; font-weight: 500; color: var(--muted); }
 
         .db-field input, .db-field select, .db-field textarea {
-          background: var(--input-bg); border: 1px solid var(--border);
-          border-radius: 10px; padding: 11px 14px;
-          font-size: 14px; color: var(--text);
-          font-family: 'DM Sans', sans-serif; outline: none; resize: vertical;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          background: var(--input-bg); border: 2px solid transparent;
+          border-radius: 12px; padding: 14px 16px;
+          font-size: 15px; color: var(--text);
+          font-weight: 500;
+          font-family: var(--font-body); outline: none; resize: vertical;
+          transition: all 0.2s;
         }
 
         .db-field input:focus, .db-field select:focus, .db-field textarea:focus {
-          border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+          border-color: #f97316; background: var(--card-bg); box-shadow: 0 4px 12px rgba(249,115,22,0.1);
         }
 
         .db-field select option { background: var(--card-bg); }
@@ -875,13 +909,13 @@ export default function Dashboard() {
 
         .db-submit {
           background: #f97316; color: white; border: none;
-          border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+          border-radius: 14px; padding: 14px; font-size: 15px; font-weight: 700;
+          font-family: var(--font-heading); cursor: pointer; transition: all 0.2s;
           display: flex; align-items: center; justify-content: center;
-          min-height: 44px; box-shadow: 0 4px 16px rgba(249,115,22,0.3);
+          min-height: 48px; box-shadow: 0 4px 16px rgba(249,115,22,0.3);
         }
 
-        .db-submit:hover:not(:disabled) { background: #ea6c0a; transform: translateY(-1px); }
+        .db-submit:hover:not(:disabled) { background: #ea6c0a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(249,115,22,0.4); }
         .db-submit:disabled { opacity: 0.7; cursor: not-allowed; }
 
         .db-spinner {

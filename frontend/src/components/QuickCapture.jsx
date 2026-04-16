@@ -359,7 +359,7 @@ export default function QuickCapture({ topics, onClose, onSaved }) {
         }
 
         .qc-title {
-          font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+          font-family: var(--font-heading); font-size: 18px; font-weight: 700;
           color: var(--text); margin: 0 0 3px;
         }
 
@@ -376,7 +376,7 @@ export default function QuickCapture({ topics, onClose, onSaved }) {
         .qc-back-btn {
           background: none; border: 1px solid var(--border); border-radius: 8px;
           padding: 5px 12px; font-size: 13px; color: var(--muted);
-          cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+          cursor: pointer; font-family: var(--font-body); transition: all 0.15s;
         }
 
         .qc-back-btn:hover { border-color: var(--muted); color: var(--text); }
@@ -389,7 +389,7 @@ export default function QuickCapture({ topics, onClose, onSaved }) {
         .qc-url-input {
           flex: 1; background: var(--input-bg); border: 1px solid var(--border);
           border-radius: 10px; padding: 12px 16px; font-size: 14px; color: var(--text);
-          font-family: 'DM Sans', sans-serif; outline: none;
+          font-family: var(--font-body); outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
         }
 
@@ -402,7 +402,7 @@ export default function QuickCapture({ topics, onClose, onSaved }) {
         .qc-analyze-btn {
           background: #f97316; color: white; border: none;
           border-radius: 10px; padding: 12px 20px; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+          font-family: var(--font-body); cursor: pointer; transition: all 0.2s;
           white-space: nowrap; box-shadow: 0 4px 14px rgba(249,115,22,0.3);
           display: flex; align-items: center; gap: 8px; min-width: 120px;
           justify-content: center;
@@ -439,7 +439,7 @@ export default function QuickCapture({ topics, onClose, onSaved }) {
         }
 
         .qc-captured-title {
-          font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+          font-family: var(--font-heading); font-size: 16px; font-weight: 700;
           color: var(--text); margin: 0;
         }
 
@@ -470,7 +470,7 @@ export default function QuickCapture({ topics, onClose, onSaved }) {
         .qc-field input, .qc-field select, .qc-field textarea {
           background: var(--input-bg); border: 1px solid var(--border);
           border-radius: 10px; padding: 10px 14px;
-          font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
+          font-size: 14px; color: var(--text); font-family: var(--font-body);
           outline: none; resize: vertical;
           transition: border-color 0.2s, box-shadow 0.2s;
         }
@@ -499,7 +499,7 @@ export default function QuickCapture({ topics, onClose, onSaved }) {
         .qc-save-btn {
           background: #f97316; color: white; border: none;
           border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+          font-family: var(--font-body); cursor: pointer; transition: all 0.2s;
           display: flex; align-items: center; gap: 8px; min-width: 140px;
           justify-content: center; box-shadow: 0 4px 14px rgba(249,115,22,0.3);
         }
